@@ -65,6 +65,25 @@
   row-gap: 0.5rem;
   font-size: 0.95rem;
   cursor: text;
+  position: relative;
+  animation: crt-flicker 0.25s infinite;
+}
+
+.terminal__body::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+  z-index: 10;
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 0.992; }
+  50% { opacity: 1; }
+  100% { opacity: 0.992; }
 }
 
 /* Custom scrollbar for terminal */

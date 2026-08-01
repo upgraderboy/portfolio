@@ -3,7 +3,7 @@ import { createGlobalStyle } from "styled-components";
 
 const GlobalStyle = createGlobalStyle`
 
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap");
 /* Variables CSS */
 
 [data-theme="dark"]{
@@ -297,6 +297,39 @@ box-shadow:0px 0px 9px 9px var(--btn-shadow) ;
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+
+/* Cyber Security Monospace Typography & Glitch Upgrades */
+.skills__level,
+.qualification__calendar,
+.memories__category,
+.memories__date,
+.admin__sidebar-title,
+.admin__nav-item {
+  font-family: "Fira Code", monospace;
+  font-size: 0.85em;
+  letter-spacing: -0.5px;
+}
+
+.section__title {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.section__title:hover {
+  text-shadow: 2px -1px 0 rgba(255, 0, 80, 0.5), -2px 1px 0 rgba(0, 255, 240, 0.5), 0 0 8px rgba(0, 255, 30, 0.4);
+  animation: cyber-glitch 0.2s linear infinite;
+  color: #fff !important;
+}
+
+@keyframes cyber-glitch {
+  0% { transform: translate(0) }
+  20% { transform: translate(-2px, 2px) }
+  40% { transform: translate(-2px, -2px) }
+  60% { transform: translate(2px, 2px) }
+  80% { transform: translate(2px, -2px) }
+  100% { transform: translate(0) }
+}
+
 `;
 
 export default GlobalStyle;
