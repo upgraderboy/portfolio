@@ -13,6 +13,7 @@ import Services from "./components/services/Services.tsx";
 import Skills from "./components/skills/Skills.tsx";
 import Testimonials from "./components/testimonials/Testimonials.tsx";
 import Admin from "./components/admin/Admin.tsx";
+import Terminal from "./components/terminal/Terminal.tsx";
 import { PortfolioProvider, usePortfolioData } from "./components/db/PortfolioContext.tsx";
 
 const PortfolioContent: React.FC<{ navigate: (to: string) => void }> = ({ navigate }) => {
@@ -20,6 +21,7 @@ const PortfolioContent: React.FC<{ navigate: (to: string) => void }> = ({ naviga
     <>
       <Header />
       <Home />
+      <Terminal />
       <About />
       <Skills />
       <Services />
