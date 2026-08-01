@@ -17,11 +17,13 @@ const Terminal: React.FC = () => {
   ]);
   const [cmdHistory, setCmdHistory] = useState<string[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
-  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+    }
   }, [history]);
 
   const focusInput = () => {
@@ -165,7 +167,7 @@ const Terminal: React.FC = () => {
           <i className="uil uil-terminal terminal__header-icon"></i>
         </div>
 
-        <div className="terminal__body">
+        <div className="terminal__body" ref={bodyRef}>
           {history.map((item, idx) => (
             <div key={idx} className={`terminal__line terminal__line--${item.type}`}>
               {item.isHtml ? (
@@ -175,7 +177,7 @@ const Terminal: React.FC = () => {
               )}
             </div>
           ))}
-          <div ref={terminalEndRef} />
+
 
           <div className="terminal__prompt-row">
             <span className="terminal__prompt">guest@upgraderboy:~$</span>
