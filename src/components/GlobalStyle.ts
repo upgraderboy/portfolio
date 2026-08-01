@@ -253,6 +253,50 @@ box-shadow:0px 0px 9px 9px var(--btn-shadow) ;
 ::-webkit-scrollbar-thumb:hover {
   background: #555; 
 }
+
+/* Dynamic Loader Styling */
+.portfolio-loader-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #0e1630;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+}
+
+.portfolio-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 1.5rem;
+}
+
+.portfolio-loader-circle {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 255, 30, 0.1);
+  border-top-color: #00ff1e;
+  border-radius: 50%;
+  animation: loader-spin 1s infinite linear;
+}
+
+.portfolio-loader-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #71878D;
+  letter-spacing: 1px;
+  animation: loader-fade 1.5s infinite ease-in-out;
+}
+
+@keyframes loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loader-fade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 `;
 
 export default GlobalStyle;

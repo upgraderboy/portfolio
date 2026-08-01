@@ -1,99 +1,41 @@
-
+import { usePortfolioData } from "../db/PortfolioContext";
 
 function Backend() {
+  const { portfolioData } = usePortfolioData();
+  const { skills } = portfolioData;
+  const backendSkills = skills.backend;
+
+  const midIndex = Math.ceil(backendSkills.length / 2);
+  const col1 = backendSkills.slice(0, midIndex);
+  const col2 = backendSkills.slice(midIndex);
+
   return (
     <>
       <div className="skills__content">
-        <h3 className="skills__title"></h3>
+        <h3 className="skills__title">Backend developer</h3>
 
         <div className="skills__box">
           <div className="skills__group">
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">Node JS</h3>
-                <span className="skills__level">BASIC</span>
+            {col1.map((skill, index) => (
+              <div className="skills__data" key={index}>
+                <i className="bx bx-badge-check"></i>
+                <div>
+                  <h3 className="skills__name">{skill.name}</h3>
+                  <span className="skills__level">{skill.level}</span>
+                </div>
               </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">MongoDB</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">GIT</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">AWS</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">JWT</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">NGNIX</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
+            ))}
           </div>
           <div className="skills__group">
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">Express JS</h3>
-                <span className="skills__level">Intermediate</span>
+            {col2.map((skill, index) => (
+              <div className="skills__data" key={index}>
+                <i className="bx bx-badge-check"></i>
+                <div>
+                  <h3 className="skills__name">{skill.name}</h3>
+                  <span className="skills__level">{skill.level}</span>
+                </div>
               </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">MySQL</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">Docker</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">FireBase</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">Auth0</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
-            <div className="skills__data">
-              <i className="bx bx-badge-check"></i>
-              <div>
-                <h3 className="skills__name">GraphQL</h3>
-                <span className="skills__level">Intermediate</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -101,4 +43,4 @@ function Backend() {
   );
 }
 
-export default Backend
+export default Backend;

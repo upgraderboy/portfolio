@@ -1,9 +1,13 @@
-
 import "./about.css";
 import CV from "../../assets/UB-Resume.pdf";
 import AboutImg from "../../assets/Ankit Bhuria.jpeg";
 import Info from "./Info.tsx";
+import { usePortfolioData } from "../db/PortfolioContext";
+
 function About() {
+  const { portfolioData } = usePortfolioData();
+  const { about } = portfolioData;
+
   return (
     <>
       <section className="section about" id="about">
@@ -14,11 +18,8 @@ function About() {
           <img src={AboutImg} alt="" className="about__img" />
           <div className="about__data">
             <Info />
-            <p className="about__description">
-              Full Stack Developer using MERN and Next.js, I create web apps
-              with UI / UX user interface and make robust backend applications,
-              I have years of experience and many clients are happy with the
-              projects carried out by me.
+            <p className="about__description" style={{ whiteSpace: "pre-line" }}>
+              {about.description}
             </p>
             <a download="" href={CV} className="button button--flex">
               Download CV{" "}

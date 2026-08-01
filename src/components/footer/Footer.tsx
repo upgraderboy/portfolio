@@ -1,6 +1,10 @@
 import React from "react";
 import "./footer.css";
-const Footer: React.FC = ()=>{
+interface FooterProps {
+  navigate?: (to: string) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ navigate })=>{
   return (
     <>
       <footer className="footer">
@@ -32,6 +36,15 @@ const Footer: React.FC = ()=>{
               <a href="#contact" className="footer__link">
                 Contact Me
               </a>
+            </li>
+            <li>
+              <span
+                onClick={() => navigate?.("/admin")}
+                className="footer__link"
+                style={{ cursor: "pointer" }}
+              >
+                Admin Portal
+              </span>
             </li>
           </ul>
         </div>

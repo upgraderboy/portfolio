@@ -1,11 +1,16 @@
 
 import "../../App.css";
+import { usePortfolioData } from "../db/PortfolioContext";
+
 function Data() {
+  const { portfolioData } = usePortfolioData();
+  const { home } = portfolioData;
+
   return (
     <>
       <div className="home__data">
         <h1 className="home__title">
-          Ankit Bhuria{" "}
+          {home.name}{" "}
           <svg
             width="36"
             height="36"
@@ -57,9 +62,9 @@ function Data() {
           </svg>
         </h1>
 
-        <h3 className="home__subtitle">Software Developer</h3>
-        <p className="home__description">
-          👨‍💻 Software Developer | Tech Enthusiast | <br /> Learn In Public Advocate  |  MERN & Next JS |
+        <h3 className="home__subtitle">{home.subtitle}</h3>
+        <p className="home__description" style={{ whiteSpace: "pre-line" }}>
+          {home.description}
         </p>
         <a href="#contact" className="button button--flex">
           Say Hello{" "}
