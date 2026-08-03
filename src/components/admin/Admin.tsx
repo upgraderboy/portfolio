@@ -8,7 +8,7 @@ import {
   QualificationItem,
   BlogItem,
 } from "../db/portfolioDb";
-import { TipTapEditor } from "./TipTapEditor";
+import TipTapEditor from "./TipTapEditor";
 import "./admin.css";
 
 interface AdminProps {

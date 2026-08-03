@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -12,6 +13,7 @@ const firebaseConfig = {
 };
 
 let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 let isFirebaseConfigured = false;
 
 // Check if critical configuration variables are set
@@ -19,8 +21,9 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "PLACEHOLDER") {
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    storage = getStorage(app);
     isFirebaseConfigured = true;
-    console.log("Firebase Firestore initialized successfully.");
+    console.log("Firebase Firestore and Storage initialized successfully.");
   } catch (error) {
     console.error("Failed to initialize Firebase:", error);
   }
@@ -30,4 +33,4 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "PLACEHOLDER") {
   );
 }
 
-export { db, isFirebaseConfigured };
+export { db, storage, isFirebaseConfigured };
