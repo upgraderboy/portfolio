@@ -425,7 +425,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
     setIsUploading(true);
     try {
       const url = await uploadFileToStorage(file, "documents");
-      const html = `<iframe src="${url}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+      const html = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
       editor?.chain().focus().insertContent(html).run();
     } catch (err) {
       console.warn("Storage PDF upload failed, attempting fallback:", err);
@@ -462,10 +462,10 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
         const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
         html = `<iframe src="${embedUrl}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
       } else {
-        html = `<iframe src="${url}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+        html = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
       }
     } else {
-      html = `<iframe src="${url}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+      html = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
     }
     editor.chain().focus().insertContent(html).run();
   };
