@@ -47,6 +47,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [aboutExpYears, setAboutExpYears] = useState(portfolioData.about.experienceYears);
   const [aboutProjects, setAboutProjects] = useState(portfolioData.about.completedProjects);
   const [aboutSupport, setAboutSupport] = useState(portfolioData.about.supportAvailability);
+  const [aboutCvUrl, setAboutCvUrl] = useState(portfolioData.about.cvUrl || "");
 
   // Projects State Form
   const [projTitle, setProjTitle] = useState("");
@@ -212,6 +213,27 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     reader.readAsDataURL(file);
   };
 
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      alert("Please upload a PDF file only.");
+      return;
+    }
+
+    if (file.size > 800 * 1024) {
+      alert("File is too large. Please upload a PDF under 800KB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAboutCvUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // CRUD Actions
   // 1. Save Home & About text content
   const handleSaveHomeAbout = (e: React.FormEvent) => {
@@ -223,6 +245,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
         experienceYears: aboutExpYears,
         completedProjects: aboutProjects,
         supportAvailability: aboutSupport,
+        cvUrl: aboutCvUrl,
       }
     );
     alert("Home and About sections updated successfully!");
@@ -638,6 +661,40 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     onChange={(e) => setAboutSupport(e.target.value)}
                     required
                   />
+                </div>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">CV / Resume PDF (URL or File Upload)</label>
+                  <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="PDF URL or Local Upload"
+                      value={aboutCvUrl.startsWith("data:application/pdf") ? "Local PDF File Uploaded" : aboutCvUrl}
+                      onChange={(e) => setAboutCvUrl(e.target.value)}
+                      disabled={aboutCvUrl.startsWith("data:application/pdf")}
+                      style={{ flexGrow: 1 }}
+                    />
+                    <label className="memories__form-file-label" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <i className="uil uil-upload-alt"></i> Upload PDF
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        style={{ display: "none" }}
+                        onChange={handlePdfUpload}
+                      />
+                    </label>
+                    {aboutCvUrl && (
+                      <button 
+                        type="button" 
+                        className="admin__action-btn admin__action-btn--delete" 
+                        onClick={() => setAboutCvUrl("")} 
+                        style={{ height: "100%", width: "42px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        title="Remove PDF"
+                      >
+                        <i className="uil uil-trash-alt"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 

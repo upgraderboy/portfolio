@@ -21,7 +21,13 @@ function About() {
             <p className="about__description" style={{ whiteSpace: "pre-line" }}>
               {about.description}
             </p>
-            <a download="" href={CV} className="button button--flex">
+            <a 
+              download={about.cvUrl ? "Resume.pdf" : ""} 
+              href={about.cvUrl || CV} 
+              target={about.cvUrl ? "_blank" : undefined}
+              rel="noopener noreferrer" 
+              className="button button--flex"
+            >
               Download CV{" "}
               <svg
                 className="button__icon"

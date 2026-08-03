@@ -56,6 +56,7 @@ export interface PortfolioData {
     experienceYears: string;
     completedProjects: string;
     supportAvailability: string;
+    cvUrl?: string;
   };
   skills: {
     frontend: SkillItem[];
@@ -82,7 +83,8 @@ export const initialPortfolioData: PortfolioData = {
     description: "",
     experienceYears: "",
     completedProjects: "",
-    supportAvailability: ""
+    supportAvailability: "",
+    cvUrl: ""
   },
   skills: {
     frontend: [],
