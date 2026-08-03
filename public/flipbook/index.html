@@ -237,6 +237,14 @@
       const isGoogleDrive = pdfUrl.includes("drive.google.com") || pdfUrl.includes("googleapis.com");
 
       if (isGoogleDrive) {
+        // Extract fileId from the URL
+        let fileId = "";
+        if (pdfUrl.includes("id=")) {
+          fileId = pdfUrl.split("id=")[1]?.split("&")[0];
+        } else if (pdfUrl.includes("/file/d/")) {
+          fileId = pdfUrl.split("/file/d/")[1]?.split("/")[0];
+        }
+
         // 1. Try local dev server proxy if on localhost
         if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
           const idx = pdfUrl.indexOf("/uc?");
@@ -252,20 +260,23 @@
           }
         }
         
-        // 2. Cascading public CORS proxies (corsproxy.io allows client-side requests, allorigins as fallback)
-        const proxies = [
-          (url) => "https://corsproxy.io/?url=" + encodeURIComponent(url),
-          (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
-        ];
+        // 2. In production, use the direct usercontent download URL to bypass 303 redirects and CORS errors
+        if (fileId) {
+          const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+          const proxies = [
+            (url) => "https://corsproxy.io/?url=" + encodeURIComponent(url),
+            (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+          ];
 
-        for (let i = 0; i < proxies.length; i++) {
-          try {
-            const proxiedUrl = proxies[i](pdfUrl);
-            console.log(`Attempting load via public CORS proxy ${i + 1}...`);
-            await attemptLoad(proxiedUrl);
-            return;
-          } catch (e) {
-            console.warn(`Public CORS proxy ${i + 1} failed:`, e);
+          for (let i = 0; i < proxies.length; i++) {
+            try {
+              const proxiedUrl = proxies[i](directUrl);
+              console.log(`Attempting load via direct URL through public CORS proxy ${i + 1}...`);
+              await attemptLoad(proxiedUrl);
+              return;
+            } catch (e) {
+              console.warn(`Public CORS proxy ${i + 1} failed:`, e);
+            }
           }
         }
 
