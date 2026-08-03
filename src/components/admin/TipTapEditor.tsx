@@ -425,7 +425,15 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
     setIsUploading(true);
     try {
       const url = await uploadFileToStorage(file, "documents");
-      const html = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+      const html = `
+        <div class="pdf-container" style="margin: 16px 0;">
+          <div class="pdf-download-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px 8px 0 0; margin-bottom: 0;">
+            <span style="font-weight: 500; color: var(--title-color); display: inline-flex; align-items: center; gap: 8px;"><i class="uil uil-file-alt" style="color: var(--green-color); font-size: 1.2rem;"></i> ${file.name}</span>
+            <a href="${url}" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background-color: var(--first-color); color: #fff; border-radius: 6px; font-weight: 500;">Download PDF <i class="uil uil-import"></i></a>
+          </div>
+          <iframe src="/flipbook/index.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; display: block;" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
       editor?.chain().focus().insertContent(html).run();
     } catch (err) {
       console.warn("Storage PDF upload failed, attempting fallback:", err);
@@ -433,7 +441,15 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const src = reader.result as string;
-          const html = `<iframe src="${src}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+          const html = `
+            <div class="pdf-container" style="margin: 16px 0;">
+              <div class="pdf-download-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px 8px 0 0; margin-bottom: 0;">
+                <span style="font-weight: 500; color: var(--title-color); display: inline-flex; align-items: center; gap: 8px;"><i class="uil uil-file-alt" style="color: var(--green-color); font-size: 1.2rem;"></i> ${file.name}</span>
+                <a href="${src}" download="${file.name}" style="padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background-color: var(--first-color); color: #fff; border-radius: 6px; font-weight: 500;">Download PDF <i class="uil uil-import"></i></a>
+              </div>
+              <iframe src="${src}" width="100%" height="600" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; display: block;" frameborder="0" allowfullscreen></iframe>
+            </div>
+          `;
           editor?.chain().focus().insertContent(html).run();
         };
         reader.readAsDataURL(file);
@@ -460,12 +476,39 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
       }
       if (fileId) {
         const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-        html = `<iframe src="${embedUrl}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        const name = "Shared Document (Google Drive)";
+        html = `
+          <div class="pdf-container" style="margin: 16px 0;">
+            <div class="pdf-download-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px 8px 0 0; margin-bottom: 0;">
+              <span style="font-weight: 500; color: var(--title-color); display: inline-flex; align-items: center; gap: 8px;"><i class="uil uil-file-alt" style="color: var(--green-color); font-size: 1.2rem;"></i> ${name}</span>
+              <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background-color: var(--first-color); color: #fff; border-radius: 6px; font-weight: 500;">Download File <i class="uil uil-import"></i></a>
+            </div>
+            <iframe src="${embedUrl}" width="100%" height="600" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; display: block;" frameborder="0" allowfullscreen></iframe>
+          </div>
+        `;
       } else {
-        html = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+        html = `
+          <div class="pdf-container" style="margin: 16px 0;">
+            <div class="pdf-download-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px 8px 0 0; margin-bottom: 0;">
+              <span style="font-weight: 500; color: var(--title-color); display: inline-flex; align-items: center; gap: 8px;"><i class="uil uil-file-alt" style="color: var(--green-color); font-size: 1.2rem;"></i> Shared Document</span>
+              <a href="${url}" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background-color: var(--first-color); color: #fff; border-radius: 6px; font-weight: 500;">Download PDF <i class="uil uil-import"></i></a>
+            </div>
+            <iframe src="/flipbook/index.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; display: block;" frameborder="0" allowfullscreen></iframe>
+          </div>
+        `;
       }
     } else {
-      html = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+      const name = url.split("/").pop() || "Document.pdf";
+      html = `
+        <div class="pdf-container" style="margin: 16px 0;">
+          <div class="pdf-download-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px 8px 0 0; margin-bottom: 0;">
+            <span style="font-weight: 500; color: var(--title-color); display: inline-flex; align-items: center; gap: 8px;"><i class="uil uil-file-alt" style="color: var(--green-color); font-size: 1.2rem;"></i> ${name}</span>
+            <a href="${url}" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background-color: var(--first-color); color: #fff; border-radius: 6px; font-weight: 500;">Download PDF <i class="uil uil-import"></i></a>
+          </div>
+          <iframe src="/flipbook/index.html?file=${encodeURIComponent(url)}" width="100%" height="600" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; display: block;" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
     }
     editor.chain().focus().insertContent(html).run();
   };

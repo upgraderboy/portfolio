@@ -2,6 +2,37 @@ import React, { useEffect, useState } from "react";
 import { usePortfolioData } from "../db/PortfolioContext";
 import "./blogs.css";
 
+const formatPostContent = (html: string): string => {
+  if (!html) return "";
+
+  let parsed = html;
+
+  // Regex to match existing/legacy Google Drive preview iframes and capture surrounding attributes
+  const driveRegex = /<iframe([^>]*)src="https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/preview"([^>]*)><\/iframe>/g;
+  
+  parsed = parsed.replace(driveRegex, (match, attrsBefore, fileId, attrsAfter) => {
+    const allAttrs = (attrsBefore || "") + (attrsAfter || "");
+    
+    // If it is a video (contains autoplay or is embedded as video size), skip upgrading
+    if (allAttrs.includes("autoplay") || allAttrs.includes("controls")) {
+      return match;
+    }
+    
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    return `
+      <div class="pdf-container" style="margin: 16px 0;">
+        <div class="pdf-download-bar" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background-color: var(--card-color); border: 1px solid var(--border-color); border-radius: 8px 8px 0 0; margin-bottom: 0;">
+          <span style="font-weight: 500; color: var(--title-color); display: inline-flex; align-items: center; gap: 8px;"><i class="uil uil-file-alt" style="color: var(--green-color); font-size: 1.2rem;"></i> Shared Document (Google Drive)</span>
+          <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" style="padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; background-color: var(--first-color); color: #fff; border-radius: 6px; font-weight: 500;">Download File <i class="uil uil-import"></i></a>
+        </div>
+        <iframe src="/flipbook/index.html?file=${encodeURIComponent(downloadUrl)}" width="100%" height="600" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; display: block;" frameborder="0" allowfullscreen></iframe>
+      </div>
+    `;
+  });
+
+  return parsed;
+};
+
 interface BlogPostPageProps {
   blogId: string;
   navigate: (to: string) => void;
@@ -77,7 +108,7 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
       )}
 
       {/* Article Content Rendered safely */}
-      <article className="blog-post__article" dangerouslySetInnerHTML={{ __html: blog.content }} />
+      <article className="blog-post__article" dangerouslySetInnerHTML={{ __html: formatPostContent(blog.content) }} />
     </div>
   );
 };
