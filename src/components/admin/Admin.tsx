@@ -81,6 +81,16 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [qSubtitle, setQSubtitle] = useState("");
   const [qCalendar, setQCalendar] = useState("");
 
+  // Skills & Qualifications Editing States
+  const [editingSkillKey, setEditingSkillKey] = useState<string | null>(null);
+  const [editSkillName, setEditSkillName] = useState("");
+  const [editSkillLevel, setEditSkillLevel] = useState("");
+
+  const [editingQualId, setEditingQualId] = useState<string | null>(null);
+  const [editQualTitle, setEditQualTitle] = useState("");
+  const [editQualSubtitle, setEditQualSubtitle] = useState("");
+  const [editQualCalendar, setEditQualCalendar] = useState("");
+
   // Drag & Drop Reordering States
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragSource, setDragSource] = useState<string | null>(null);
@@ -421,6 +431,61 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setMemImages([""]);
   };
 
+  // Skills Inline Editing Helpers
+  const startEditSkill = (type: "frontend" | "backend", s: SkillItem) => {
+    setEditingSkillKey(`${type}-${s.name}`);
+    setEditSkillName(s.name);
+    setEditSkillLevel(s.level);
+  };
+
+  const handleSaveSkillEdit = (type: "frontend" | "backend", oldName: string) => {
+    if (!editSkillName) return;
+    const updatedSkills = { ...portfolioData.skills };
+    if (type === "frontend") {
+      updatedSkills.frontend = updatedSkills.frontend.map((s) =>
+        s.name === oldName ? { name: editSkillName, level: editSkillLevel } : s
+      );
+    } else {
+      updatedSkills.backend = updatedSkills.backend.map((s) =>
+        s.name === oldName ? { name: editSkillName, level: editSkillLevel } : s
+      );
+    }
+    updateSkills(updatedSkills);
+    setEditingSkillKey(null);
+  };
+
+  const handleCancelSkillEdit = () => {
+    setEditingSkillKey(null);
+  };
+
+  // Qualifications Inline Editing Helpers
+  const startEditQualification = (q: QualificationItem) => {
+    setEditingQualId(q.id);
+    setEditQualTitle(q.title);
+    setEditQualSubtitle(q.subtitle);
+    setEditQualCalendar(q.calendar);
+  };
+
+  const handleSaveQualificationEdit = (type: "education" | "experience", id: string) => {
+    if (!editQualTitle || !editQualSubtitle || !editQualCalendar) return;
+    const updatedQ = { ...portfolioData.qualification };
+    if (type === "education") {
+      updatedQ.education = updatedQ.education.map((q) =>
+        q.id === id ? { id, title: editQualTitle, subtitle: editQualSubtitle, calendar: editQualCalendar } : q
+      );
+    } else {
+      updatedQ.experience = updatedQ.experience.map((q) =>
+        q.id === id ? { id, title: editQualTitle, subtitle: editQualSubtitle, calendar: editQualCalendar } : q
+      );
+    }
+    updateQualification(updatedQ);
+    setEditingQualId(null);
+  };
+
+  const handleCancelQualificationEdit = () => {
+    setEditingQualId(null);
+  };
+
   // 5. Skills CRUD
   const handleAddSkill = (e: React.FormEvent) => {
     e.preventDefault();
@@ -731,30 +796,96 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {portfolioData.skills.frontend.map((s, idx) => (
-                        <tr
-                          key={idx}
-                          draggable
-                          onDragStart={() => handleDragStart(idx, "frontend-skills")}
-                          onDragOver={(e) => handleDragOver(e, idx, "frontend-skills")}
-                          onDragEnd={handleDragEnd}
-                          className={draggedIndex === idx && dragSource === "frontend-skills" ? "admin__table-row--dragging" : ""}
-                        >
-                          <td style={{ textAlign: "center" }}>
-                            <i className="uil uil-draggabled" style={{ cursor: "grab", color: "var(--font-color)" }}></i>
-                          </td>
-                          <td>{s.name}</td>
-                          <td>{s.level}</td>
-                          <td>
-                            <button
-                              className="admin__action-btn admin__action-btn--delete"
-                              onClick={() => handleDeleteSkill("frontend", s.name)}
-                            >
-                              <i className="uil uil-trash-alt"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {portfolioData.skills.frontend.map((s, idx) => {
+                        const isEditing = editingSkillKey === `frontend-${s.name}`;
+                        return (
+                          <tr
+                            key={idx}
+                            draggable={!isEditing}
+                            onDragStart={() => !isEditing && handleDragStart(idx, "frontend-skills")}
+                            onDragOver={(e) => !isEditing && handleDragOver(e, idx, "frontend-skills")}
+                            onDragEnd={handleDragEnd}
+                            className={draggedIndex === idx && dragSource === "frontend-skills" ? "admin__table-row--dragging" : ""}
+                          >
+                            <td style={{ textAlign: "center" }}>
+                              <i className="uil uil-draggabled" style={{ cursor: isEditing ? "not-allowed" : "grab", color: "var(--font-color)" }}></i>
+                            </td>
+                            {isEditing ? (
+                              <>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editSkillName}
+                                    onChange={(e) => setEditSkillName(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <select
+                                    className="admin__form-select"
+                                    value={editSkillLevel}
+                                    onChange={(e) => setEditSkillLevel(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", height: "auto" }}
+                                  >
+                                    <option value="Basic">Basic</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                  </select>
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={() => handleSaveSkillEdit("frontend", s.name)}
+                                      style={{ color: "var(--green-color)" }}
+                                      title="Save"
+                                    >
+                                      <i className="uil uil-check"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={handleCancelSkillEdit}
+                                      style={{ color: "red" }}
+                                      title="Cancel"
+                                    >
+                                      <i className="uil uil-multiply"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td>{s.name}</td>
+                                <td>{s.level}</td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--edit"
+                                      onClick={() => startEditSkill("frontend", s)}
+                                      title="Edit"
+                                    >
+                                      <i className="uil uil-edit"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--delete"
+                                      onClick={() => handleDeleteSkill("frontend", s.name)}
+                                      title="Delete"
+                                    >
+                                      <i className="uil uil-trash-alt"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -774,30 +905,96 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {portfolioData.skills.backend.map((s, idx) => (
-                        <tr
-                          key={idx}
-                          draggable
-                          onDragStart={() => handleDragStart(idx, "backend-skills")}
-                          onDragOver={(e) => handleDragOver(e, idx, "backend-skills")}
-                          onDragEnd={handleDragEnd}
-                          className={draggedIndex === idx && dragSource === "backend-skills" ? "admin__table-row--dragging" : ""}
-                        >
-                          <td style={{ textAlign: "center" }}>
-                            <i className="uil uil-draggabled" style={{ cursor: "grab", color: "var(--font-color)" }}></i>
-                          </td>
-                          <td>{s.name}</td>
-                          <td>{s.level}</td>
-                          <td>
-                            <button
-                              className="admin__action-btn admin__action-btn--delete"
-                              onClick={() => handleDeleteSkill("backend", s.name)}
-                            >
-                              <i className="uil uil-trash-alt"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {portfolioData.skills.backend.map((s, idx) => {
+                        const isEditing = editingSkillKey === `backend-${s.name}`;
+                        return (
+                          <tr
+                            key={idx}
+                            draggable={!isEditing}
+                            onDragStart={() => !isEditing && handleDragStart(idx, "backend-skills")}
+                            onDragOver={(e) => !isEditing && handleDragOver(e, idx, "backend-skills")}
+                            onDragEnd={handleDragEnd}
+                            className={draggedIndex === idx && dragSource === "backend-skills" ? "admin__table-row--dragging" : ""}
+                          >
+                            <td style={{ textAlign: "center" }}>
+                              <i className="uil uil-draggabled" style={{ cursor: isEditing ? "not-allowed" : "grab", color: "var(--font-color)" }}></i>
+                            </td>
+                            {isEditing ? (
+                              <>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editSkillName}
+                                    onChange={(e) => setEditSkillName(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <select
+                                    className="admin__form-select"
+                                    value={editSkillLevel}
+                                    onChange={(e) => setEditSkillLevel(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", height: "auto" }}
+                                  >
+                                    <option value="Basic">Basic</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Advanced">Advanced</option>
+                                  </select>
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={() => handleSaveSkillEdit("backend", s.name)}
+                                      style={{ color: "var(--green-color)" }}
+                                      title="Save"
+                                    >
+                                      <i className="uil uil-check"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={handleCancelSkillEdit}
+                                      style={{ color: "red" }}
+                                      title="Cancel"
+                                    >
+                                      <i className="uil uil-multiply"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td>{s.name}</td>
+                                <td>{s.level}</td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--edit"
+                                      onClick={() => startEditSkill("backend", s)}
+                                      title="Edit"
+                                    >
+                                      <i className="uil uil-edit"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--delete"
+                                      onClick={() => handleDeleteSkill("backend", s.name)}
+                                      title="Delete"
+                                    >
+                                      <i className="uil uil-trash-alt"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -865,31 +1062,105 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {portfolioData.qualification.education.map((q, idx) => (
-                        <tr
-                          key={q.id}
-                          draggable
-                          onDragStart={() => handleDragStart(idx, "education")}
-                          onDragOver={(e) => handleDragOver(e, idx, "education")}
-                          onDragEnd={handleDragEnd}
-                          className={draggedIndex === idx && dragSource === "education" ? "admin__table-row--dragging" : ""}
-                        >
-                          <td style={{ textAlign: "center" }}>
-                            <i className="uil uil-draggabled" style={{ cursor: "grab", color: "var(--font-color)" }}></i>
-                          </td>
-                          <td>{q.title}</td>
-                          <td>{q.subtitle}</td>
-                          <td>{q.calendar}</td>
-                          <td>
-                            <button
-                              className="admin__action-btn admin__action-btn--delete"
-                              onClick={() => handleDeleteQualification("education", q.id)}
-                            >
-                              <i className="uil uil-trash-alt"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {portfolioData.qualification.education.map((q, idx) => {
+                        const isEditing = editingQualId === q.id;
+                        return (
+                          <tr
+                            key={q.id}
+                            draggable={!isEditing}
+                            onDragStart={() => !isEditing && handleDragStart(idx, "education")}
+                            onDragOver={(e) => !isEditing && handleDragOver(e, idx, "education")}
+                            onDragEnd={handleDragEnd}
+                            className={draggedIndex === idx && dragSource === "education" ? "admin__table-row--dragging" : ""}
+                          >
+                            <td style={{ textAlign: "center" }}>
+                              <i className="uil uil-draggabled" style={{ cursor: isEditing ? "not-allowed" : "grab", color: "var(--font-color)" }}></i>
+                            </td>
+                            {isEditing ? (
+                              <>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editQualTitle}
+                                    onChange={(e) => setEditQualTitle(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editQualSubtitle}
+                                    onChange={(e) => setEditQualSubtitle(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editQualCalendar}
+                                    onChange={(e) => setEditQualCalendar(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={() => handleSaveQualificationEdit("education", q.id)}
+                                      style={{ color: "var(--green-color)" }}
+                                      title="Save"
+                                    >
+                                      <i className="uil uil-check"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={handleCancelQualificationEdit}
+                                      style={{ color: "red" }}
+                                      title="Cancel"
+                                    >
+                                      <i className="uil uil-multiply"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td>{q.title}</td>
+                                <td>{q.subtitle}</td>
+                                <td>{q.calendar}</td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--edit"
+                                      onClick={() => startEditQualification(q)}
+                                      title="Edit"
+                                    >
+                                      <i className="uil uil-edit"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--delete"
+                                      onClick={() => handleDeleteQualification("education", q.id)}
+                                      title="Delete"
+                                    >
+                                      <i className="uil uil-trash-alt"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -910,31 +1181,105 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {portfolioData.qualification.experience.map((q, idx) => (
-                        <tr
-                          key={q.id}
-                          draggable
-                          onDragStart={() => handleDragStart(idx, "experience")}
-                          onDragOver={(e) => handleDragOver(e, idx, "experience")}
-                          onDragEnd={handleDragEnd}
-                          className={draggedIndex === idx && dragSource === "experience" ? "admin__table-row--dragging" : ""}
-                        >
-                          <td style={{ textAlign: "center" }}>
-                            <i className="uil uil-draggabled" style={{ cursor: "grab", color: "var(--font-color)" }}></i>
-                          </td>
-                          <td>{q.title}</td>
-                          <td>{q.subtitle}</td>
-                          <td>{q.calendar}</td>
-                          <td>
-                            <button
-                              className="admin__action-btn admin__action-btn--delete"
-                              onClick={() => handleDeleteQualification("experience", q.id)}
-                            >
-                              <i className="uil uil-trash-alt"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {portfolioData.qualification.experience.map((q, idx) => {
+                        const isEditing = editingQualId === q.id;
+                        return (
+                          <tr
+                            key={q.id}
+                            draggable={!isEditing}
+                            onDragStart={() => !isEditing && handleDragStart(idx, "experience")}
+                            onDragOver={(e) => !isEditing && handleDragOver(e, idx, "experience")}
+                            onDragEnd={handleDragEnd}
+                            className={draggedIndex === idx && dragSource === "experience" ? "admin__table-row--dragging" : ""}
+                          >
+                            <td style={{ textAlign: "center" }}>
+                              <i className="uil uil-draggabled" style={{ cursor: isEditing ? "not-allowed" : "grab", color: "var(--font-color)" }}></i>
+                            </td>
+                            {isEditing ? (
+                              <>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editQualTitle}
+                                    onChange={(e) => setEditQualTitle(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editQualSubtitle}
+                                    onChange={(e) => setEditQualSubtitle(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="admin__form-input"
+                                    value={editQualCalendar}
+                                    onChange={(e) => setEditQualCalendar(e.target.value)}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem" }}
+                                    required
+                                  />
+                                </td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={() => handleSaveQualificationEdit("experience", q.id)}
+                                      style={{ color: "var(--green-color)" }}
+                                      title="Save"
+                                    >
+                                      <i className="uil uil-check"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn"
+                                      onClick={handleCancelQualificationEdit}
+                                      style={{ color: "red" }}
+                                      title="Cancel"
+                                    >
+                                      <i className="uil uil-multiply"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td>{q.title}</td>
+                                <td>{q.subtitle}</td>
+                                <td>{q.calendar}</td>
+                                <td>
+                                  <div style={{ display: "flex", columnGap: "0.25rem" }}>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--edit"
+                                      onClick={() => startEditQualification(q)}
+                                      title="Edit"
+                                    >
+                                      <i className="uil uil-edit"></i>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="admin__action-btn admin__action-btn--delete"
+                                      onClick={() => handleDeleteQualification("experience", q.id)}
+                                      title="Delete"
+                                    >
+                                      <i className="uil uil-trash-alt"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
