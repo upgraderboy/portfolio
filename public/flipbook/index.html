@@ -234,175 +234,214 @@
     }
 
     async function loadBook() {
-      let finalPdfUrl = pdfUrl;
       const isGoogleDrive = pdfUrl.includes("drive.google.com") || pdfUrl.includes("googleapis.com");
 
       if (isGoogleDrive) {
-        // If local development, use Vite's built-in dev server proxy
+        // 1. Try local dev server proxy if on localhost
         if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
           const idx = pdfUrl.indexOf("/uc?");
           if (idx !== -1) {
-            finalPdfUrl = "/gdrive" + pdfUrl.substring(idx);
-          } else {
-            finalPdfUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(pdfUrl);
+            const localUrl = "/gdrive" + pdfUrl.substring(idx);
+            try {
+              console.log("Attempting local Vite proxy...");
+              await attemptLoad(localUrl);
+              return;
+            } catch (e) {
+              console.warn("Local Vite proxy failed, falling back to public CORS proxies...", e);
+            }
           }
-        } else {
-          // If in production, use a public CORS proxy
-          finalPdfUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(pdfUrl);
         }
-      }
-
-      try {
-        const loadingTask = pdfjsLib.getDocument(finalPdfUrl);
-        const pdf = await loadingTask.promise;
-        const totalPages = pdf.numPages;
-        const bookDiv = document.getElementById("book");
-
-        // Grab first page to calculate aspect ratio
-        const firstPage = await pdf.getPage(1);
-        const originalViewport = firstPage.getViewport({ scale: 1.0 });
         
-        // Target dynamic sizing based on viewport height and width
-        const baseHeight = Math.min(window.innerHeight * 0.75, 750);
-        const aspectRatio = originalViewport.width / originalViewport.height;
-        const baseWidth = baseHeight * aspectRatio;
+        // 2. Cascading public CORS proxies (corsproxy.io allows client-side requests, allorigins as fallback)
+        const proxies = [
+          (url) => "https://corsproxy.io/?" + encodeURIComponent(url),
+          (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+        ];
 
-        // Provision container pages sequentially
-        const pagePromises = [];
-        for (let i = 1; i <= totalPages; i++) {
-          const pageDiv = document.createElement("div");
-          pageDiv.className = "page";
-          pageDiv.setAttribute("data-page", i);
-          
-          const canvas = document.createElement("canvas");
-          pageDiv.appendChild(canvas);
-          bookDiv.appendChild(pageDiv);
-
-          // We load the rendering sequentially but non-blocking
-          pagePromises.push((async () => {
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 1.5 }); // High-definition render
-            
-            const context = canvas.getContext("2d");
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            const renderContext = {
-              canvasContext: context,
-              viewport: viewport
-            };
-            await page.render(renderContext).promise;
-          })());
-        }
-
-        // Wait for first 2 pages to render before mounting StPageFlip for visual latency reduction
-        await Promise.all(pagePromises.slice(0, Math.min(2, totalPages)));
-
-        // Remove loader
-        document.getElementById("loader").style.display = "none";
-        bookDiv.classList.add("ready");
-
-        // Initialize PageFlip
-        const pageFlip = new St.PageFlip(bookDiv, {
-          width: Math.round(baseWidth),
-          height: Math.round(baseHeight),
-          size: "stretch",
-          minWidth: 280,
-          maxWidth: 900,
-          minHeight: 380,
-          maxHeight: 1200,
-          maxShadowOpacity: 0.4,
-          showCover: true,
-          mobileScrollSupport: false
-        });
-
-        pageFlip.loadFromHTML(document.querySelectorAll(".page"));
-
-        // Setup Toolbar controls
-        const pageIdxSpan = document.getElementById("pageIdx");
-        
-        const updateToolbar = () => {
-          const current = pageFlip.getCurrentPageIndex();
-          const total = pageFlip.getPageCount();
-          pageIdxSpan.textContent = `${current + 1} / ${total}`;
-        };
-
-        updateToolbar();
-
-        pageFlip.on("flip", () => {
-          updateToolbar();
-        });
-
-        // Left/Right Nav controls
-        document.getElementById("prevBtn").addEventListener("click", () => pageFlip.flipPrev());
-        document.getElementById("nextBtn").addEventListener("click", () => pageFlip.flipNext());
-
-        // Keyboard nav
-        window.addEventListener("keydown", (e) => {
-          if (e.key === "ArrowLeft") pageFlip.flipPrev();
-          if (e.key === "ArrowRight") pageFlip.flipNext();
-        });
-
-        // Zoom Controls (simply scaling the container dynamically)
-        let currentScale = 1.0;
-        document.getElementById("zoomIn").addEventListener("click", () => {
-          if (currentScale < 1.4) {
-            currentScale += 0.1;
-            bookDiv.style.transform = `scale(${currentScale})`;
-          }
-        });
-        document.getElementById("zoomOut").addEventListener("click", () => {
-          if (currentScale > 0.7) {
-            currentScale -= 0.1;
-            bookDiv.style.transform = `scale(${currentScale})`;
-          }
-        });
-
-        // Fullscreen Mode
-        document.getElementById("fullscreen").addEventListener("click", () => {
-          if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-              console.warn("Fullscreen toggle failed:", err);
-            });
-          } else {
-            document.exitFullscreen();
-          }
-        });
-
-        // Direct Download Action
-        document.getElementById("download").addEventListener("click", () => {
-          const a = document.createElement("a");
-          a.href = pdfUrl;
-          a.target = "_blank";
-          a.download = pdfUrl.split("/").pop() || "document.pdf";
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        });
-
-        // Load the remaining pages in background asynchronously
-        Promise.all(pagePromises.slice(2));
-
-      } catch (err) {
-        console.error("Flipbook rendering error:", err);
-        
-        // Self-healing redirection to Google's official preview frame if CORS or loading fails
-        if (isGoogleDrive) {
-          console.warn("Proxy download failed. Redirecting to Google Drive preview embed...");
-          let fileId = "";
-          if (pdfUrl.includes("id=")) {
-            fileId = pdfUrl.split("id=")[1]?.split("&")[0];
-          } else if (pdfUrl.includes("/file/d/")) {
-            fileId = pdfUrl.split("/file/d/")[1]?.split("/")[0];
-          }
-          if (fileId) {
-            window.location.replace(`https://drive.google.com/file/d/${fileId}/preview`);
+        for (let i = 0; i < proxies.length; i++) {
+          try {
+            const proxiedUrl = proxies[i](pdfUrl);
+            console.log(`Attempting load via public CORS proxy ${i + 1}...`);
+            await attemptLoad(proxiedUrl);
             return;
+          } catch (e) {
+            console.warn(`Public CORS proxy ${i + 1} failed:`, e);
           }
         }
-        
-        document.getElementById("loader").innerHTML = `<div style="color: #ff3838;">Rendering failed: ${err.message}</div>`;
+
+        // 3. Fallback: Redirect to Google Drive preview iframe if all download proxies fail
+        console.warn("All CORS proxies failed to load the binary stream. Falling back to Google Drive default preview...");
+        redirectToGooglePreview();
+      } else {
+        // Direct PDF URL
+        try {
+          await attemptLoad(pdfUrl);
+        } catch (e) {
+          console.warn("Direct PDF fetch failed (CORS block), trying public CORS proxies...", e);
+          const proxies = [
+            (url) => "https://corsproxy.io/?" + encodeURIComponent(url),
+            (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
+          ];
+          for (let i = 0; i < proxies.length; i++) {
+            try {
+              await attemptLoad(proxies[i](pdfUrl));
+              return;
+            } catch (err) {
+              console.warn(`Proxy ${i + 1} failed for external PDF:`, err);
+            }
+          }
+          document.getElementById("loader").innerHTML = `<div style="color: #ff3838;">Rendering failed: ${e.message}</div>`;
+        }
       }
+    }
+
+    function redirectToGooglePreview() {
+      let fileId = "";
+      if (pdfUrl.includes("id=")) {
+        fileId = pdfUrl.split("id=")[1]?.split("&")[0];
+      } else if (pdfUrl.includes("/file/d/")) {
+        fileId = pdfUrl.split("/file/d/")[1]?.split("/")[0];
+      }
+      if (fileId) {
+        window.location.replace(`https://drive.google.com/file/d/${fileId}/preview`);
+      } else {
+        document.getElementById("loader").innerHTML = `<div style="color: #ff3838;">All proxies failed and file ID could not be parsed for Google preview.</div>`;
+      }
+    }
+
+    async function attemptLoad(targetUrl) {
+      const loadingTask = pdfjsLib.getDocument(targetUrl);
+      const pdf = await loadingTask.promise;
+      const totalPages = pdf.numPages;
+      const bookDiv = document.getElementById("book");
+
+      // Clear book container in case of multiple retries
+      bookDiv.innerHTML = "";
+
+      // Grab first page to calculate aspect ratio
+      const firstPage = await pdf.getPage(1);
+      const originalViewport = firstPage.getViewport({ scale: 1.0 });
+      
+      // Target dynamic sizing based on viewport height and width
+      const baseHeight = Math.min(window.innerHeight * 0.75, 750);
+      const aspectRatio = originalViewport.width / originalViewport.height;
+      const baseWidth = baseHeight * aspectRatio;
+
+      // Provision container pages sequentially
+      const pagePromises = [];
+      for (let i = 1; i <= totalPages; i++) {
+        const pageDiv = document.createElement("div");
+        pageDiv.className = "page";
+        pageDiv.setAttribute("data-page", i);
+        
+        const canvas = document.createElement("canvas");
+        pageDiv.appendChild(canvas);
+        bookDiv.appendChild(pageDiv);
+
+        // We load the rendering sequentially but non-blocking
+        pagePromises.push((async () => {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 }); // High-definition render
+          
+          const context = canvas.getContext("2d");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+          await page.render(renderContext).promise;
+        })());
+      }
+
+      // Wait for first 2 pages to render before mounting StPageFlip for visual latency reduction
+      await Promise.all(pagePromises.slice(0, Math.min(2, totalPages)));
+
+      // Remove loader
+      document.getElementById("loader").style.display = "none";
+      bookDiv.classList.add("ready");
+
+      // Initialize PageFlip
+      const pageFlip = new St.PageFlip(bookDiv, {
+        width: Math.round(baseWidth),
+        height: Math.round(baseHeight),
+        size: "stretch",
+        minWidth: 280,
+        maxWidth: 900,
+        minHeight: 380,
+        maxHeight: 1200,
+        maxShadowOpacity: 0.4,
+        showCover: true,
+        mobileScrollSupport: false
+      });
+
+      pageFlip.loadFromHTML(document.querySelectorAll(".page"));
+
+      // Setup Toolbar controls
+      const pageIdxSpan = document.getElementById("pageIdx");
+      
+      const updateToolbar = () => {
+        const current = pageFlip.getCurrentPageIndex();
+        const total = pageFlip.getPageCount();
+        pageIdxSpan.textContent = `${current + 1} / ${total}`;
+      };
+
+      updateToolbar();
+
+      pageFlip.on("flip", () => {
+        updateToolbar();
+      });
+
+      // Left/Right Nav controls
+      document.getElementById("prevBtn").addEventListener("click", () => pageFlip.flipPrev());
+      document.getElementById("nextBtn").addEventListener("click", () => pageFlip.flipNext());
+
+      // Keyboard nav
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") pageFlip.flipPrev();
+        if (e.key === "ArrowRight") pageFlip.flipNext();
+      });
+
+      // Zoom Controls (simply scaling the container dynamically)
+      let currentScale = 1.0;
+      document.getElementById("zoomIn").addEventListener("click", () => {
+        if (currentScale < 1.4) {
+          currentScale += 0.1;
+          bookDiv.style.transform = `scale(${currentScale})`;
+        }
+      });
+      document.getElementById("zoomOut").addEventListener("click", () => {
+        if (currentScale > 0.7) {
+          currentScale -= 0.1;
+          bookDiv.style.transform = `scale(${currentScale})`;
+        }
+      });
+
+      // Fullscreen Mode
+      document.getElementById("fullscreen").addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.warn("Fullscreen toggle failed:", err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      });
+
+      // Direct Download Action
+      document.getElementById("download").addEventListener("click", () => {
+        const a = document.createElement("a");
+        a.href = pdfUrl;
+        a.target = "_blank";
+        a.download = pdfUrl.split("/").pop() || "document.pdf";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+
+      // Load the remaining pages in background asynchronously
+      Promise.all(pagePromises.slice(2));
     }
   </script>
 </body>
