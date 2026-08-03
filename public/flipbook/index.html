@@ -254,7 +254,7 @@
         
         // 2. Cascading public CORS proxies (corsproxy.io allows client-side requests, allorigins as fallback)
         const proxies = [
-          (url) => "https://corsproxy.io/?" + encodeURIComponent(url),
+          (url) => "https://corsproxy.io/?url=" + encodeURIComponent(url),
           (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
         ];
 
@@ -279,7 +279,7 @@
         } catch (e) {
           console.warn("Direct PDF fetch failed (CORS block), trying public CORS proxies...", e);
           const proxies = [
-            (url) => "https://corsproxy.io/?" + encodeURIComponent(url),
+            (url) => "https://corsproxy.io/?url=" + encodeURIComponent(url),
             (url) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(url)
           ];
           for (let i = 0; i < proxies.length; i++) {
