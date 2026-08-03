@@ -386,7 +386,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
   };
 
   const addVideoExternal = () => {
-    const url = prompt("Enter video link (YouTube, MP4 URL, etc.):");
+    const url = prompt("Enter video link (YouTube, Google Drive, MP4 URL, etc.):");
     if (!url || !editor) return;
 
     let html = "";
@@ -399,6 +399,19 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
       }
       const embedUrl = `https://www.youtube.com/embed/${videoId}`;
       html = `<iframe src="${embedUrl}" width="560" height="315" frameborder="0" allowfullscreen style="max-width: 100%; border-radius: 8px; margin: 12px 0; display: block; aspect-ratio: 16/9; width: 100%; height: auto;"></iframe>`;
+    } else if (url.includes("drive.google.com")) {
+      let fileId = "";
+      if (url.includes("/file/d/")) {
+        fileId = url.split("/file/d/")[1]?.split("/")[0];
+      } else if (url.includes("id=")) {
+        fileId = url.split("id=")[1]?.split("&")[0];
+      }
+      if (fileId) {
+        const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        html = `<iframe src="${embedUrl}" width="640" height="480" frameborder="0" allowfullscreen style="max-width: 100%; border-radius: 8px; margin: 12px 0; display: block; aspect-ratio: 16/9; width: 100%; height: auto;"></iframe>`;
+      } else {
+        html = `<video src="${url}" controls style="max-width: 100%; border-radius: 8px; margin: 12px 0; display: block;"></video>`;
+      }
     } else {
       html = `<video src="${url}" controls style="max-width: 100%; border-radius: 8px; margin: 12px 0; display: block;"></video>`;
     }
