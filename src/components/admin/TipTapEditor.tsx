@@ -463,7 +463,13 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
   };
 
   const addPdfExternal = () => {
-    const url = prompt("Enter PDF link (Direct URL or Google Drive share link):");
+    const url = prompt(
+      "Enter PDF link (Direct URL, raw GitHub link, or Google Drive link):\n\n" +
+      "⚠️ NOTE: For the 3D Page Flip animation to work on your live site, the PDF must allow public download (CORS access).\n" +
+      "1. Recommended: Put the PDF in your local 'public/' folder (e.g. public/handwritten-notes.pdf) and type: /handwritten-notes.pdf\n" +
+      "2. Or, use a raw GitHub file link.\n" +
+      "3. Google Drive links will load the 3D flipbook locally but automatically fall back to Google's standard previewer in production due to Google Drive CORS blocks."
+    );
     if (!url || !editor) return;
 
     let html = "";
