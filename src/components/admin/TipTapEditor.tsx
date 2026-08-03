@@ -425,7 +425,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
     setIsUploading(true);
     try {
       const url = await uploadFileToStorage(file, "documents");
-      const html = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; column-gap: 8px; padding: 12px 18px; background-color: var(--body-color); border: 1px solid var(--border-color); border-radius: 8px; color: var(--green-color); font-weight: 500; text-decoration: none; margin: 12px 0; font-family: sans-serif;"><i class="uil uil-file-download-alt" style="font-size: 1.2rem; color: var(--green-color); margin-right: 4px;"></i> Download PDF: ${file.name}</a>`;
+      const html = `<iframe src="${url}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
       editor?.chain().focus().insertContent(html).run();
     } catch (err) {
       console.warn("Storage PDF upload failed, attempting fallback:", err);
@@ -433,7 +433,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const src = reader.result as string;
-          const html = `<a href="${src}" target="_blank" rel="noopener noreferrer" download="${file.name}" style="display: inline-flex; align-items: center; column-gap: 8px; padding: 12px 18px; background-color: var(--body-color); border: 1px solid var(--border-color); border-radius: 8px; color: var(--green-color); font-weight: 500; text-decoration: none; margin: 12px 0; font-family: sans-serif;"><i class="uil uil-file-download-alt" style="font-size: 1.2rem; color: var(--green-color); margin-right: 4px;"></i> Download PDF: ${file.name}</a>`;
+          const html = `<iframe src="${src}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
           editor?.chain().focus().insertContent(html).run();
         };
         reader.readAsDataURL(file);
@@ -447,12 +447,27 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({ content, onChange }) => {
   };
 
   const addPdfExternal = () => {
-    const url = prompt("Enter PDF link:");
-    if (url && editor) {
-      const name = url.split("/").pop() || "Document.pdf";
-      const html = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; column-gap: 8px; padding: 12px 18px; background-color: var(--body-color); border: 1px solid var(--border-color); border-radius: 8px; color: var(--green-color); font-weight: 500; text-decoration: none; margin: 12px 0; font-family: sans-serif;"><i class="uil uil-file-download-alt" style="font-size: 1.2rem; color: var(--green-color); margin-right: 4px;"></i> Download PDF: ${name}</a>`;
-      editor.chain().focus().insertContent(html).run();
+    const url = prompt("Enter PDF link (Direct URL or Google Drive share link):");
+    if (!url || !editor) return;
+
+    let html = "";
+    if (url.includes("drive.google.com")) {
+      let fileId = "";
+      if (url.includes("/file/d/")) {
+        fileId = url.split("/file/d/")[1]?.split("/")[0];
+      } else if (url.includes("id=")) {
+        fileId = url.split("id=")[1]?.split("&")[0];
+      }
+      if (fileId) {
+        const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        html = `<iframe src="${embedUrl}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+      } else {
+        html = `<iframe src="${url}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
+      }
+    } else {
+      html = `<iframe src="${url}" width="100%" height="600" style="width: 100%; height: 600px; border: none; border-radius: 8px; margin: 12px 0; display: block;" frameborder="0" allowfullscreen></iframe>`;
     }
+    editor.chain().focus().insertContent(html).run();
   };
 
   const slashOptions = [
