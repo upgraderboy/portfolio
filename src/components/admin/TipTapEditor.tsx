@@ -4,7 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Node, mergeAttributes } from "@tiptap/core";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../db/firebase";
 
 // Custom Node Extension for Video support in Tiptap
@@ -128,8 +128,8 @@ const uploadFileToStorage = async (file: File, path: string): Promise<string> =>
     throw new Error("Storage is not configured");
   }
   const fileRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
-  const uploadTask = await uploadBytesResumable(fileRef, file);
-  return await getDownloadURL(uploadTask.ref);
+  const snapshot = await uploadBytes(fileRef, file);
+  return await getDownloadURL(snapshot.ref);
 };
 
 interface TipTapEditorProps {
