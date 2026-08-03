@@ -14,9 +14,18 @@ import Skills from "./components/skills/Skills.tsx";
 import Testimonials from "./components/testimonials/Testimonials.tsx";
 import Admin from "./components/admin/Admin.tsx";
 import Terminal from "./components/terminal/Terminal.tsx";
+import BlogsSection from "./components/blogs/BlogsSection.tsx";
+import BlogsPage from "./components/blogs/BlogsPage.tsx";
+import BlogPostPage from "./components/blogs/BlogPostPage.tsx";
+import ProjectsPage from "./components/portfolio/ProjectsPage.tsx";
+import MemoriesPage from "./components/memories/MemoriesPage.tsx";
 import { PortfolioProvider, usePortfolioData } from "./components/db/PortfolioContext.tsx";
 
-const PortfolioContent: React.FC<{ navigate: (to: string) => void }> = ({ navigate }) => {
+interface PortfolioContentProps {
+  navigate: (to: string) => void;
+}
+
+const PortfolioContent: React.FC<PortfolioContentProps> = ({ navigate }) => {
   return (
     <>
       <Header />
@@ -26,8 +35,9 @@ const PortfolioContent: React.FC<{ navigate: (to: string) => void }> = ({ naviga
       <Skills />
       <Services />
       <Qualification />
-      <Memories />
-      <Project />
+      <Memories navigate={navigate} />
+      <Project navigate={navigate} />
+      <BlogsSection navigate={navigate} />
       <Testimonials />
       <Contact />
       <Footer navigate={navigate} />
@@ -63,13 +73,29 @@ const AppContent: React.FC = () => {
     );
   }
 
+  const renderContent = () => {
+    if (route === "/admin") {
+      return <Admin navigate={navigate} />;
+    }
+    if (route === "/blogs") {
+      return <BlogsPage navigate={navigate} />;
+    }
+    if (route.startsWith("/blogs/")) {
+      const blogId = route.substring("/blogs/".length);
+      return <BlogPostPage blogId={blogId} navigate={navigate} />;
+    }
+    if (route === "/projects") {
+      return <ProjectsPage navigate={navigate} />;
+    }
+    if (route === "/memories") {
+      return <MemoriesPage navigate={navigate} />;
+    }
+    return <PortfolioContent navigate={navigate} />;
+  };
+
   return (
     <>
-      {route === "/admin" ? (
-        <Admin navigate={navigate} />
-      ) : (
-        <PortfolioContent navigate={navigate} />
-      )}
+      {renderContent()}
     </>
   );
 };

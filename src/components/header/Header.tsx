@@ -11,6 +11,15 @@ const Header: React.FC = ()=>{
   const [Toggle, showMenu] = useState(false);
   
   const [activeNav, setActiveNav] = useState("#home");
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
+    if (window.location.pathname !== "/") {
+      e.preventDefault();
+      window.location.href = "/" + hash;
+    } else {
+      setActiveNav(hash);
+    }
+  };
   
   // const [toggleState, setToggleState] = useState(false);
 
@@ -49,7 +58,7 @@ const Header: React.FC = ()=>{
               <li className="nav__item">
                 <a
                   href="#home"
-                  onClick={() => setActiveNav("#home")}
+                  onClick={(e) => handleNavClick(e, "#home")}
                   className={
                     activeNav === "#home"
                       ? "nav__link active-link"
@@ -62,7 +71,7 @@ const Header: React.FC = ()=>{
               <li className="nav__item">
                 <a
                   href="#about"
-                  onClick={() => setActiveNav("#about")}
+                  onClick={(e) => handleNavClick(e, "#about")}
                   className={
                     activeNav === "#about"
                       ? "nav__link active-link"
@@ -75,7 +84,7 @@ const Header: React.FC = ()=>{
               <li className="nav__item">
                 <a
                   href="#terminal"
-                  onClick={() => setActiveNav("#terminal")}
+                  onClick={(e) => handleNavClick(e, "#terminal")}
                   className={
                     activeNav === "#terminal"
                       ? "nav__link active-link"
@@ -88,7 +97,7 @@ const Header: React.FC = ()=>{
               <li className="nav__item">
                 <a
                   href="#skills"
-                  onClick={() => setActiveNav("#skills")}
+                  onClick={(e) => handleNavClick(e, "#skills")}
                   className={
                     activeNav === "#skills"
                       ? "nav__link active-link"
@@ -101,7 +110,7 @@ const Header: React.FC = ()=>{
               <li className="nav__item">
                 <a
                   href="#services"
-                  onClick={() => setActiveNav("#services")}
+                  onClick={(e) => handleNavClick(e, "#services")}
                   className={
                     activeNav === "#services"
                       ? "nav__link active-link"
@@ -114,7 +123,7 @@ const Header: React.FC = ()=>{
               <li className="nav__item">
                 <a
                   href="#portfolio"
-                  onClick={() => setActiveNav("#portfolio")}
+                  onClick={(e) => handleNavClick(e, "#portfolio")}
                   className={
                     activeNav === "#portfolio"
                       ? "nav__link active-link"
@@ -126,8 +135,21 @@ const Header: React.FC = ()=>{
               </li>
               <li className="nav__item">
                 <a
+                  href="#blogs"
+                  onClick={(e) => handleNavClick(e, "#blogs")}
+                  className={
+                    activeNav === "#blogs"
+                      ? "nav__link active-link"
+                      : "nav__link"
+                  }
+                >
+                  <i className="uil uil-book-reader nav__icon"></i>Blogs
+                </a>
+              </li>
+              <li className="nav__item">
+                <a
                   href="#contact"
-                  onClick={() => setActiveNav("#contact")}
+                  onClick={(e) => handleNavClick(e, "#contact")}
                   className={
                     activeNav === "#contact"
                       ? "nav__link active-link"

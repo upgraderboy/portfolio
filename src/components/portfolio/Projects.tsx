@@ -2,53 +2,51 @@ import { useEffect, useState } from "react";
 import { usePortfolioData } from "../db/PortfolioContext";
 import ProjectItems from "./ProjectItems";
 
-function Projects() {
-  const { portfolioData } = usePortfolioData();
-  const { projects } = portfolioData;
+interface ProjectsProps {
+  navigate: (to: string) => void;
+}
 
-  const [item, setItem] = useState({ name: "All" });
-  const [filteredProjects, setFilteredProjects] = useState<any[]>([]);
-  const [active, setActive] = useState(0);
-
-  // Dynamically derive categories from projects
-  const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
+function Projects({ navigate }: ProjectsProps) {
+  const { fetchProjects, portfolioData } = usePortfolioData();
+  const [displayedProjects, setDisplayedProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (item.name === "All") {
-      setFilteredProjects(projects);
-    } else {
-      const newProjects = projects.filter((project) => {
-        return project.category === item.name;
-      });
-      setFilteredProjects(newProjects);
-    }
-  }, [item, projects]);
+    let active = true;
+    fetchProjects(3).then((list) => {
+      if (active) {
+        setDisplayedProjects(list);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [portfolioData.projects, fetchProjects]);
 
-  const handleClick = (name: string, index: number) => {
-    setItem({ name });
-    setActive(index);
-  };
+  if (loading) {
+    return <div style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>Loading recent works...</div>;
+  }
 
   return (
     <>
-      <div className="project__filters">
-        {categories.map((name, index) => {
-          return (
-            <span
-              className={`${active === index ? "active-work" : ""} project__item`}
-              key={index}
-              onClick={() => handleClick(name, index)}
-            >
-              {name}
-            </span>
-          );
-        })}
-      </div>
-      <div className="project__container container grid">
-        {filteredProjects.map((project, index) => {
+      <div className="project__container container grid" style={{ marginTop: "2rem" }}>
+        {displayedProjects.map((project, index) => {
           return <ProjectItems item={project} key={project.id || index} />;
         })}
       </div>
+      
+      {(portfolioData.projects || []).length > 3 && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "2.5rem" }}>
+          <button 
+            className="button button--flex" 
+            onClick={() => navigate("/projects")}
+            style={{ display: "inline-flex", alignItems: "center", columnGap: "0.5rem", cursor: "pointer" }}
+          >
+            View All Projects <i className="uil uil-arrow-right" style={{ fontSize: "1.2rem" }}></i>
+          </button>
+        </div>
+      )}
     </>
   );
 }

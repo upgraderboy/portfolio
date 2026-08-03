@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, limit } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "./firebase";
 import { initialPortfolioData, PortfolioData } from "./portfolioDb";
 
@@ -13,6 +13,13 @@ interface PortfolioContextType {
   updateProjects: (projectsData: PortfolioData["projects"]) => void;
   updateTestimonials: (testimonialsData: PortfolioData["testimonials"]) => void;
   updateMemories: (memoriesData: PortfolioData["memories"]) => void;
+  updateBlogs: (blogsData: NonNullable<PortfolioData["blogs"]>) => void;
+  
+  // Dynamic query optimized fetchers
+  fetchProjects: (limitCount?: number) => Promise<any[]>;
+  fetchMemories: (limitCount?: number) => Promise<any[]>;
+  fetchBlogs: (limitCount?: number) => Promise<any[]>;
+  fetchBlogPost: (id: string) => Promise<any | null>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -42,10 +49,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               projects: data.projects || initialPortfolioData.projects,
               testimonials: data.testimonials || initialPortfolioData.testimonials,
               memories: data.memories || initialPortfolioData.memories,
+              blogs: data.blogs || initialPortfolioData.blogs,
             });
             console.log("Portfolio data loaded successfully from Cloud Firestore.");
           } else {
-            // First time running: provision Firestore with initial default data
             console.log("No data found in Firestore collection. Provisioning database with defaults...");
             await setDoc(docRef, initialPortfolioData);
             setPortfolioData(initialPortfolioData);
@@ -64,14 +71,32 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     loadData();
   }, []);
 
+  const cleanUndefined = (obj: any): any => {
+    if (obj === null || typeof obj !== "object") {
+      return obj;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(cleanUndefined);
+    }
+    const cleaned: any = {};
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (val !== undefined) {
+        cleaned[key] = cleanUndefined(val);
+      }
+    }
+    return cleaned;
+  };
+
   const saveAndSetData = async (newData: PortfolioData) => {
+    const cleanedData = cleanUndefined(newData);
     setPortfolioData(newData);
 
     if (isFirebaseConfigured && db) {
       try {
         const docRef = doc(db, "portfolio_config", "data");
-        await setDoc(docRef, newData);
-        console.log("Synchronized portfolio state to Cloud Firestore.");
+        await setDoc(docRef, cleanedData);
+        console.log("Synchronized portfolio state to Cloud Firestore successfully.");
       } catch (error) {
         console.error("Failed to sync with Firestore:", error);
       }
@@ -96,19 +121,154 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     saveAndSetData({ ...portfolioData, qualification: qualificationData });
   };
 
-  const updateProjects = (projectsData: PortfolioData["projects"]) => {
+  const updateProjects = async (projectsData: PortfolioData["projects"]) => {
     saveAndSetData({ ...portfolioData, projects: projectsData });
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const currentProjects = portfolioData.projects || [];
+        const newIds = new Set(projectsData.map((p) => p.id));
+        
+        for (const p of currentProjects) {
+          if (!newIds.has(p.id)) {
+            await deleteDoc(doc(db, "projects", p.id));
+          }
+        }
+        for (const p of projectsData) {
+          await setDoc(doc(db, "projects", p.id), p);
+        }
+      } catch (err) {
+        console.warn("Failed to sync projects collection (this is normal if rules are not deployed yet):", err);
+      }
+    }
   };
 
   const updateTestimonials = (testimonialsData: PortfolioData["testimonials"]) => {
     saveAndSetData({ ...portfolioData, testimonials: testimonialsData });
   };
 
-  const updateMemories = (memoriesData: PortfolioData["memories"]) => {
+  const updateMemories = async (memoriesData: PortfolioData["memories"]) => {
     saveAndSetData({ ...portfolioData, memories: memoriesData });
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const currentMemories = portfolioData.memories || [];
+        const newIds = new Set(memoriesData.map((m) => m.id));
+
+        for (const m of currentMemories) {
+          if (!newIds.has(m.id)) {
+            await deleteDoc(doc(db, "memories", m.id));
+          }
+        }
+        for (const m of memoriesData) {
+          await setDoc(doc(db, "memories", m.id), m);
+        }
+      } catch (err) {
+        console.warn("Failed to sync memories collection:", err);
+      }
+    }
   };
 
+  const updateBlogs = async (blogsData: NonNullable<PortfolioData["blogs"]>) => {
+    saveAndSetData({ ...portfolioData, blogs: blogsData });
 
+    if (isFirebaseConfigured && db) {
+      try {
+        const currentBlogs = portfolioData.blogs || [];
+        const newIds = new Set(blogsData.map((b) => b.id));
+
+        for (const b of currentBlogs) {
+          if (!newIds.has(b.id)) {
+            await deleteDoc(doc(db, "blogs", b.id));
+          }
+        }
+        for (const b of blogsData) {
+          await setDoc(doc(db, "blogs", b.id), b);
+        }
+      } catch (err) {
+        console.warn("Failed to sync blogs collection:", err);
+      }
+    }
+  };
+
+  // Dynamic Query Fetchers with Fallbacks
+  const fetchProjects = async (limitCount?: number): Promise<any[]> => {
+    if (isFirebaseConfigured && db) {
+      try {
+        const colRef = collection(db, "projects");
+        const q = limitCount ? query(colRef, limit(limitCount)) : colRef;
+        const snap = await getDocs(q);
+        const list: any[] = [];
+        snap.forEach((doc) => {
+          list.push({ ...doc.data(), id: doc.id });
+        });
+        if (list.length > 0) {
+          return list.sort((a, b) => b.id.localeCompare(a.id));
+        }
+      } catch (err) {
+        console.warn("projects collection read failed, falling back to document:", err);
+      }
+    }
+    const list = portfolioData.projects || [];
+    return limitCount ? list.slice(0, limitCount) : list;
+  };
+
+  const fetchMemories = async (limitCount?: number): Promise<any[]> => {
+    if (isFirebaseConfigured && db) {
+      try {
+        const colRef = collection(db, "memories");
+        const q = limitCount ? query(colRef, limit(limitCount)) : colRef;
+        const snap = await getDocs(q);
+        const list: any[] = [];
+        snap.forEach((doc) => {
+          list.push({ ...doc.data(), id: doc.id });
+        });
+        if (list.length > 0) {
+          return list.sort((a, b) => b.id.localeCompare(a.id));
+        }
+      } catch (err) {
+        console.warn("memories collection read failed, falling back to document:", err);
+      }
+    }
+    const list = portfolioData.memories || [];
+    return limitCount ? list.slice(0, limitCount) : list;
+  };
+
+  const fetchBlogs = async (limitCount?: number): Promise<any[]> => {
+    if (isFirebaseConfigured && db) {
+      try {
+        const colRef = collection(db, "blogs");
+        const q = limitCount ? query(colRef, limit(limitCount)) : colRef;
+        const snap = await getDocs(q);
+        const list: any[] = [];
+        snap.forEach((doc) => {
+          list.push({ ...doc.data(), id: doc.id });
+        });
+        if (list.length > 0) {
+          return list.sort((a, b) => b.id.localeCompare(a.id));
+        }
+      } catch (err) {
+        console.warn("blogs collection read failed, falling back to document:", err);
+      }
+    }
+    const list = portfolioData.blogs || [];
+    return limitCount ? list.slice(0, limitCount) : list;
+  };
+
+  const fetchBlogPost = async (id: string): Promise<any | null> => {
+    if (isFirebaseConfigured && db) {
+      try {
+        const docRef = doc(db, "blogs", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return { ...docSnap.data(), id: docSnap.id };
+        }
+      } catch (err) {
+        console.warn("single blog document read failed, falling back to document list:", err);
+      }
+    }
+    return (portfolioData.blogs || []).find((b) => b.id === id) || null;
+  };
 
   return (
     <PortfolioContext.Provider
@@ -122,6 +282,11 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateProjects,
         updateTestimonials,
         updateMemories,
+        updateBlogs,
+        fetchProjects,
+        fetchMemories,
+        fetchBlogs,
+        fetchBlogPost,
       }}
     >
       {children}

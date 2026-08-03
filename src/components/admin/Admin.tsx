@@ -6,7 +6,9 @@ import {
   MemoryItem,
   SkillItem,
   QualificationItem,
+  BlogItem,
 } from "../db/portfolioDb";
+import { TipTapEditor } from "./TipTapEditor";
 import "./admin.css";
 
 interface AdminProps {
@@ -22,6 +24,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     updateProjects,
     updateTestimonials,
     updateMemories,
+    updateBlogs,
   } = usePortfolioData();
 
   // Auth State
@@ -68,6 +71,12 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [memCategory, setMemCategory] = useState("");
   const [memDescription, setMemDescription] = useState("");
   const [memImages, setMemImages] = useState<string[]>([""]);
+
+  // Blogs State Form
+  const [blogTitle, setBlogTitle] = useState("");
+  const [blogContent, setBlogContent] = useState("");
+  const [blogCoverImage, setBlogCoverImage] = useState("");
+  const [blogStatus, setBlogStatus] = useState<"public" | "draft">("public");
 
   // Skills State Form
   const [skillName, setSkillName] = useState("");
@@ -199,28 +208,81 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     navigate("/");
   };
 
-  // Image upload base64 converter
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
+  // Image upload base64 converter with image compression
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          const max_size = 800;
+          if (width > height) {
+            if (width > max_size) {
+              height *= max_size / width;
+              width = max_size;
+            }
+          } else {
+            if (height > max_size) {
+              width *= max_size / height;
+              height = max_size;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setter(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      setter(compressed);
+    } catch (err) {
+      console.error("Image compression failed, fallback to raw upload:", err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setter(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Memories dynamic image upload
-  const handleMemoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleMemoryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    try {
+      const compressed = await compressImage(file);
       const updated = [...memImages];
-      updated[index] = reader.result as string;
+      updated[index] = compressed;
       setMemImages(updated);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Image compression failed, fallback to raw upload:", err);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const updated = [...memImages];
+        updated[index] = reader.result as string;
+        setMemImages(updated);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -549,6 +611,65 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setQCalendar("");
   };
 
+  // 7. Blogs CRUD
+  const handleAddBlog = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newBlog: BlogItem = {
+      id: "blog-" + Date.now(),
+      title: blogTitle,
+      content: blogContent,
+      date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+      coverImage: blogCoverImage || "",
+      status: blogStatus,
+    };
+    const currentBlogs = portfolioData.blogs || [];
+    updateBlogs([newBlog, ...currentBlogs]);
+    resetBlogForm();
+  };
+
+  const handleEditBlog = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    const currentBlogs = portfolioData.blogs || [];
+    const updated = currentBlogs.map((b) => {
+      if (b.id === editingId) {
+        return {
+          ...b,
+          title: blogTitle,
+          content: blogContent,
+          coverImage: blogCoverImage || "",
+          status: blogStatus,
+        };
+      }
+      return b;
+    });
+    updateBlogs(updated);
+    resetBlogForm();
+  };
+
+  const handleDeleteBlog = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this blog post?")) {
+      const currentBlogs = portfolioData.blogs || [];
+      updateBlogs(currentBlogs.filter((b) => b.id !== id));
+    }
+  };
+
+  const startEditBlog = (b: BlogItem) => {
+    setEditingId(b.id);
+    setBlogTitle(b.title);
+    setBlogContent(b.content);
+    setBlogCoverImage(b.coverImage || "");
+    setBlogStatus(b.status || "public");
+  };
+
+  const resetBlogForm = () => {
+    setEditingId(null);
+    setBlogTitle("");
+    setBlogContent("");
+    setBlogCoverImage("");
+    setBlogStatus("public");
+  };
+
   // Render Login Card if not Authenticated
   if (!isAuthenticated) {
     return (
@@ -628,6 +749,12 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
             onClick={() => setActiveTab("memories")}
           >
             <i className="uil uil-image-v"></i> Memories
+          </div>
+          <div
+            className={`admin__nav-item ${activeTab === "blogs" ? "active" : ""}`}
+            onClick={() => setActiveTab("blogs")}
+          >
+            <i className="uil uil-book-open"></i> Blogs Section
           </div>
         </div>
 
@@ -2085,6 +2212,239 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                 </div>
                 <button type="submit" className="admin__btn admin__btn--primary" style={{ marginTop: "1rem" }}>
                   <i className="uil uil-plus-circle"></i> Create Event Memory
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: BLOGS */}
+        {activeTab === "blogs" && (
+          <div>
+            <div className="admin__content-header">
+              <div>
+                <h2 className="admin__content-title">Articles & Blog Posts</h2>
+                <span className="admin__content-subtitle">Write and publish technical posts using the TipTap Notion editor</span>
+              </div>
+            </div>
+
+            {/* Edit Blog Form */}
+            {editingId && (
+              <form onSubmit={handleEditBlog} className="admin__form-card" style={{ borderColor: "var(--title-color)", marginBottom: "2rem" }}>
+                <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem", color: "var(--title-color)" }}>
+                  <i className="uil uil-edit"></i> Edit Blog Post
+                </h3>
+                <div className="admin__form-grid" style={{ marginBottom: "1.5rem" }}>
+                  <div className="admin__form-group admin__form-group--full">
+                    <label className="admin__form-label">Blog Title *</label>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="e.g. Mastering Reverse Engineering on iOS"
+                      value={blogTitle}
+                      onChange={(e) => setBlogTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="admin__form-group admin__form-group--full">
+                    <label className="admin__form-label">Cover Image (URL or Local File Upload)</label>
+                    <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                      <input
+                        type="text"
+                        className="admin__form-input"
+                        placeholder="Image URL"
+                        value={blogCoverImage.startsWith("data:") ? "Local File Uploaded" : blogCoverImage}
+                        onChange={(e) => setBlogCoverImage(e.target.value)}
+                        disabled={blogCoverImage.startsWith("data:")}
+                        style={{ flexGrow: 1 }}
+                      />
+                      <label className="admin__btn admin__btn--secondary" style={{ display: "flex", alignItems: "center", cursor: "pointer", columnGap: "0.25rem", padding: "0.75rem 1.25rem", fontSize: "0.85rem" }}>
+                        <i className="uil uil-upload-alt"></i> Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => handleImageUpload(e, setBlogCoverImage)}
+                        />
+                      </label>
+                      {blogCoverImage && (
+                        <button type="button" className="admin__btn admin__btn--danger" onClick={() => setBlogCoverImage("")} style={{ padding: "0.75rem" }}>
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="admin__form-group admin__form-group--full">
+                    <label className="admin__form-label">Publication Status</label>
+                    <select
+                      className="admin__form-input"
+                      value={blogStatus}
+                      onChange={(e) => setBlogStatus(e.target.value as "public" | "draft")}
+                      style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
+                    >
+                      <option value="public">Public (Published on site)</option>
+                      <option value="draft">Draft (Hidden from site)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="admin__form-group admin__form-group--full" style={{ marginBottom: "1.5rem" }}>
+                  <label className="admin__form-label">Post Content *</label>
+                  <TipTapEditor content={blogContent} onChange={setBlogContent} />
+                </div>
+
+                <div className="admin__form-buttons" style={{ display: "flex", columnGap: "1rem" }}>
+                  <button type="submit" className="admin__btn admin__btn--primary">
+                    Save Changes
+                  </button>
+                  <button type="button" className="admin__btn admin__btn--secondary" onClick={resetBlogForm}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Blogs Table */}
+            <div className="admin__table-container">
+              <table className="admin__table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "80px" }}>Cover</th>
+                    <th>Post Title</th>
+                    <th>Date Published</th>
+                    <th style={{ width: "100px" }}>Status</th>
+                    <th style={{ width: "120px" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(portfolioData.blogs || []).length > 0 ? (
+                    portfolioData.blogs!.map((b) => (
+                      <tr key={b.id}>
+                        <td>
+                          {b.coverImage ? (
+                            <img src={b.coverImage} alt={b.title} className="admin__table-img" style={{ width: "60px", height: "40px", objectFit: "cover", borderRadius: "4px" }} />
+                          ) : (
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-color-light)" }}>No Cover</span>
+                          )}
+                        </td>
+                        <td style={{ fontWeight: "600" }}>{b.title}</td>
+                        <td style={{ fontFamily: "monospace" }}>{b.date}</td>
+                        <td>
+                          <span style={{
+                            display: "inline-block",
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.75rem",
+                            fontWeight: "600",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            textTransform: "capitalize",
+                            backgroundColor: b.status === "draft" ? "rgba(100, 116, 139, 0.15)" : "rgba(34, 197, 94, 0.15)",
+                            color: b.status === "draft" ? "#94a3b8" : "#22c55e",
+                            border: b.status === "draft" ? "1px solid rgba(100, 116, 139, 0.3)" : "1px solid rgba(34, 197, 94, 0.3)"
+                          }}>
+                            {b.status || "public"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="admin__table-actions">
+                            <button
+                              type="button"
+                              className="admin__action-btn admin__action-btn--edit"
+                              onClick={() => startEditBlog(b)}
+                              title="Edit Blog"
+                            >
+                              <i className="uil uil-edit"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="admin__action-btn admin__action-btn--delete"
+                              onClick={() => handleDeleteBlog(b.id)}
+                              title="Delete Blog"
+                            >
+                              <i className="uil uil-trash-alt"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>
+                        No blog posts published yet. Write your first article below!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Add New Blog Form */}
+            {!editingId && (
+              <form onSubmit={handleAddBlog} className="admin__form-card" style={{ marginTop: "2rem" }}>
+                <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
+                  <i className="uil uil-plus-circle"></i> Create New Blog Post
+                </h3>
+                <div className="admin__form-grid" style={{ marginBottom: "1.5rem" }}>
+                  <div className="admin__form-group admin__form-group--full">
+                    <label className="admin__form-label">Blog Title *</label>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="e.g. Mastering Reverse Engineering on iOS"
+                      value={blogTitle}
+                      onChange={(e) => setBlogTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="admin__form-group admin__form-group--full">
+                    <label className="admin__form-label">Cover Image (URL or Local File Upload)</label>
+                    <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                      <input
+                        type="text"
+                        className="admin__form-input"
+                        placeholder="Image URL"
+                        value={blogCoverImage.startsWith("data:") ? "Local File Uploaded" : blogCoverImage}
+                        onChange={(e) => setBlogCoverImage(e.target.value)}
+                        disabled={blogCoverImage.startsWith("data:")}
+                        style={{ flexGrow: 1 }}
+                      />
+                      <label className="admin__btn admin__btn--secondary" style={{ display: "flex", alignItems: "center", cursor: "pointer", columnGap: "0.25rem", padding: "0.75rem 1.25rem", fontSize: "0.85rem" }}>
+                        <i className="uil uil-upload-alt"></i> Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(e) => handleImageUpload(e, setBlogCoverImage)}
+                        />
+                      </label>
+                      {blogCoverImage && (
+                        <button type="button" className="admin__btn admin__btn--danger" onClick={() => setBlogCoverImage("")} style={{ padding: "0.75rem" }}>
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="admin__form-group admin__form-group--full">
+                    <label className="admin__form-label">Publication Status</label>
+                    <select
+                      className="admin__form-input"
+                      value={blogStatus}
+                      onChange={(e) => setBlogStatus(e.target.value as "public" | "draft")}
+                      style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
+                    >
+                      <option value="public">Public (Published on site)</option>
+                      <option value="draft">Draft (Hidden from site)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="admin__form-group admin__form-group--full" style={{ marginBottom: "1.5rem" }}>
+                  <label className="admin__form-label">Post Content *</label>
+                  <TipTapEditor content={blogContent} onChange={setBlogContent} />
+                </div>
+
+                <button type="submit" className="admin__btn admin__btn--primary" style={{ marginTop: "1rem" }}>
+                  <i className="uil uil-plus-circle"></i> Create Blog Post
                 </button>
               </form>
             )}

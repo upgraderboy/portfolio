@@ -97,6 +97,8 @@ const GlobalStyle = createGlobalStyle`
 }
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 body,
 button,
@@ -108,6 +110,8 @@ textarea {
 body {
   background-color: var(--body-color);
   color: var(--text-color);
+  overflow-x: hidden;
+  max-width: 100%;
 }
 h1,
 h2,

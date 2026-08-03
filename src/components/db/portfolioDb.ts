@@ -45,6 +45,15 @@ export interface MemoryItem {
   images: string[];
 }
 
+export interface BlogItem {
+  id: string;
+  title: string;
+  content: string; // Tiptap content
+  date: string;
+  coverImage?: string;
+  status?: "public" | "draft";
+}
+
 export interface PortfolioData {
   home: {
     name: string;
@@ -70,6 +79,7 @@ export interface PortfolioData {
   projects: ProjectItem[];
   testimonials: TestimonialItem[];
   memories: MemoryItem[];
+  blogs?: BlogItem[];
 }
 
 // Default initial data structure (empty template)
@@ -97,5 +107,6 @@ export const initialPortfolioData: PortfolioData = {
   },
   projects: [],
   testimonials: [],
-  memories: []
+  memories: [],
+  blogs: []
 };

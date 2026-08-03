@@ -458,3 +458,275 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== TIPTAP RICH TEXT EDITOR ==================== */
+.tiptap__editor {
+  background-color: var(--card-color);
+  overflow: visible !important;
+}
+
+.tiptap__tool-btn {
+  background: var(--body-color);
+  border: 1px solid var(--border-color);
+  color: var(--title-color);
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  column-gap: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.tiptap__tool-btn:hover {
+  background-color: var(--border-color);
+  color: var(--green-color);
+  border-color: var(--green-color);
+}
+
+.tiptap__tool-btn.active {
+  background-color: rgba(1, 195, 105, 0.15);
+  color: var(--green-color);
+  border-color: var(--green-color);
+  box-shadow: 0 0 5px rgba(1, 195, 105, 0.2);
+}
+
+/* Dropdown Menu inside Tiptap Toolbar */
+.tiptap__dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--container-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  min-width: 150px;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.tiptap__dropdown:hover .tiptap__dropdown-content {
+  display: block;
+}
+
+.tiptap__dropdown-content button {
+  background: transparent;
+  color: var(--title-color);
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.tiptap__dropdown-content button:hover {
+  background-color: rgba(0, 255, 30, 0.08);
+  color: var(--green-color);
+}
+
+/* Prosemirror rich text field defaults */
+.ProseMirror {
+  outline: none;
+  min-height: 350px;
+  color: var(--title-color);
+  font-family: var(--body-font);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror h1 {
+  font-size: 1.65rem;
+  color: var(--title-color);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: bold;
+}
+
+.ProseMirror h2 {
+  font-size: 1.4rem;
+  color: var(--title-color);
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.ProseMirror h3 {
+  font-size: 1.15rem;
+  color: var(--title-color);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.ProseMirror ul, 
+.ProseMirror ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror code {
+  font-family: "Fira Code", monospace;
+  background-color: var(--body-color);
+  color: var(--green-color);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  border: 1px solid var(--border-color);
+}
+
+.ProseMirror pre {
+  background-color: var(--body-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  font-family: "Fira Code", monospace;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--green-color);
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+
+.ProseMirror video {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+
+.ProseMirror iframe {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+}
+
+/* Tiptap Bubble Selection Menu */
+.tiptap__bubble-menu {
+  background-color: var(--container-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  display: flex;
+  column-gap: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 10px rgba(0, 255, 30, 0.1);
+  z-index: 1000;
+}
+
+.tiptap__bubble-btn {
+  background: transparent;
+  border: none;
+  color: var(--title-color);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tiptap__bubble-btn:hover {
+  background-color: rgba(0, 255, 30, 0.08);
+  color: var(--green-color);
+}
+
+.tiptap__bubble-btn.active {
+  background-color: rgba(0, 255, 30, 0.15);
+  color: var(--green-color);
+}
+
+/* Slash suggestions popup menu */
+.tiptap__slash-menu {
+  background-color: var(--container-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 10px rgba(0, 255, 30, 0.15);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.25rem;
+  z-index: 3000;
+  width: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tiptap__slash-item {
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  color: var(--title-color);
+  font-family: var(--body-font);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.tiptap__slash-item i {
+  color: var(--text-color-light);
+  font-size: 1.1rem;
+}
+
+.tiptap__slash-item:hover,
+.tiptap__slash-item.selected {
+  background-color: rgba(0, 255, 30, 0.1);
+  color: var(--green-color);
+}
+
+.tiptap__slash-item:hover i,
+.tiptap__slash-item.selected i {
+  color: var(--green-color);
+}
+
+/* Placeholder styling helper */
+.ProseMirror p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-color-light);
+  pointer-events: none;
+  height: 0;
+  font-style: italic;
+  opacity: 0.7;
+}
