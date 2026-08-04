@@ -1,11 +1,27 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, limit } from "firebase/firestore";
-import { db, isFirebaseConfigured } from "./firebase";
+import { 
+  User, 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  updateProfile
+} from "firebase/auth";
+import { db, auth, isFirebaseConfigured } from "./firebase";
 import { initialPortfolioData, PortfolioData } from "./portfolioDb";
 
 interface PortfolioContextType {
   portfolioData: PortfolioData;
   isLoading: boolean;
+  user: any | null;
+  authLoading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
+  logOut: () => Promise<void>;
   updateHomeAbout: (homeData: PortfolioData["home"], aboutData: PortfolioData["about"]) => void;
   updateSkills: (skillsData: PortfolioData["skills"]) => void;
   updateServices: (servicesData: PortfolioData["services"]) => void;
@@ -42,6 +58,29 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return initialPortfolioData;
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<any | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+
+  // Auth state listener
+  useEffect(() => {
+    if (isFirebaseConfigured && auth) {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        setUser(firebaseUser);
+        setAuthLoading(false);
+      });
+      return () => unsubscribe();
+    } else {
+      const cachedUser = localStorage.getItem("portfolio_mock_user");
+      if (cachedUser) {
+        try {
+          setUser(JSON.parse(cachedUser));
+        } catch (e) {
+          localStorage.removeItem("portfolio_mock_user");
+        }
+      }
+      setAuthLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -322,11 +361,96 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return (portfolioData.blogs || []).find((b) => b.id === id) || null;
   };
 
+  const signInWithGoogle = async () => {
+    if (isFirebaseConfigured && auth) {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } else {
+      const mockUser = {
+        uid: "mock-google-" + Date.now(),
+        email: "upgraderboy.mock@gmail.com",
+        displayName: "Ankit Bhuria (Mock)",
+        photoURL: "https://raw.githubusercontent.com/upgraderboy/Portfolio-PDF-Assets/main/Ankit%20Bhuria.jpeg"
+      };
+      setUser(mockUser);
+      localStorage.setItem("portfolio_mock_user", JSON.stringify(mockUser));
+    }
+  };
+
+  const signInWithEmail = async (email: string, pass: string) => {
+    if (isFirebaseConfigured && auth) {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } else {
+      const accountsStr = localStorage.getItem("portfolio_mock_accounts") || "[]";
+      const accounts = JSON.parse(accountsStr);
+      const found = accounts.find((a: any) => a.email.toLowerCase() === email.toLowerCase() && a.password === pass);
+      if (found) {
+        const loggedUser = {
+          uid: found.uid,
+          email: found.email,
+          displayName: found.displayName,
+          photoURL: null
+        };
+        setUser(loggedUser);
+        localStorage.setItem("portfolio_mock_user", JSON.stringify(loggedUser));
+      } else {
+        throw new Error("Invalid credentials. Try creating a mock account first!");
+      }
+    }
+  };
+
+  const signUpWithEmail = async (email: string, pass: string, name?: string) => {
+    if (isFirebaseConfigured && auth) {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      if (name && cred.user) {
+        await updateProfile(cred.user, { displayName: name });
+      }
+    } else {
+      const accountsStr = localStorage.getItem("portfolio_mock_accounts") || "[]";
+      const accounts = JSON.parse(accountsStr);
+      if (accounts.some((a: any) => a.email.toLowerCase() === email.toLowerCase())) {
+        throw new Error("Account already exists!");
+      }
+      const newAccount = {
+        uid: "mock-uid-" + Date.now(),
+        email: email,
+        password: pass,
+        displayName: name || email.split("@")[0]
+      };
+      accounts.push(newAccount);
+      localStorage.setItem("portfolio_mock_accounts", JSON.stringify(accounts));
+      
+      const loggedUser = {
+        uid: newAccount.uid,
+        email: newAccount.email,
+        displayName: newAccount.displayName,
+        photoURL: null
+      };
+      setUser(loggedUser);
+      localStorage.setItem("portfolio_mock_user", JSON.stringify(loggedUser));
+    }
+  };
+
+  const logOut = async () => {
+    if (isFirebaseConfigured && auth) {
+      await signOut(auth);
+    } else {
+      setUser(null);
+      localStorage.removeItem("portfolio_mock_user");
+    }
+  };
+
   return (
     <PortfolioContext.Provider
       value={{
         portfolioData,
         isLoading,
+        user,
+        authLoading,
+        signInWithGoogle,
+        signInWithEmail,
+        signUpWithEmail,
+        logOut,
         updateHomeAbout,
         updateSkills,
         updateServices,

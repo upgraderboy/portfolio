@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import UB from "../../assets/upgraderboy_dark.svg";
 import AB from "../../assets/logo1.svg";
+import { usePortfolioData } from "../db/PortfolioContext";
 import "./header.css";
 // import Register from "../auth/Register.jsx";
 import Mode from "../mode/Mode.jsx";
@@ -14,8 +15,76 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
   const [dark, setMode] = useState(localStorage.getItem("mode") === "light" ? true : false);
   const [Toggle, showMenu] = useState(false);
-  
   const [activeNav, setActiveNav] = useState("#home");
+
+  const { 
+    user, 
+    authLoading, 
+    signInWithGoogle, 
+    signInWithEmail, 
+    signUpWithEmail, 
+    logOut 
+  } = usePortfolioData();
+
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoadingState, setAuthLoadingState] = useState(false);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoadingState(true);
+    try {
+      await signInWithEmail(email, password);
+      setShowAuthModal(false);
+      resetForm();
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to sign in. Please try again.");
+    } finally {
+      setAuthLoadingState(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoadingState(true);
+    try {
+      await signUpWithEmail(email, password, name);
+      setShowAuthModal(false);
+      resetForm();
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setAuthLoadingState(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError("");
+    setAuthLoadingState(true);
+    try {
+      await signInWithGoogle();
+      setShowAuthModal(false);
+      resetForm();
+    } catch (err: any) {
+      setAuthError(err.message || "Failed to sign in with Google.");
+    } finally {
+      setAuthLoadingState(false);
+    }
+  };
+
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setName("");
+    setAuthError("");
+  };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     if (currentRoute !== "/") {
@@ -207,10 +276,351 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
           <div className="nav__toggle" onClick={() => showMenu(!Toggle)}>
             <i className="uil uil-apps"></i>
           </div>
-                  <div className="mode" onClick={()=>setMode(!dark)}><Mode /></div>
-                  
+          <div style={{ display: "flex", alignItems: "center", columnGap: "1rem" }}>
+            <div className="mode" onClick={()=>setMode(!dark)}><Mode /></div>
+            
+            {/* User Profile / Login Button */}
+            {authLoading ? (
+              <div className="portfolio-loader-circle" style={{ width: "20px", height: "20px", borderWidth: "2px" }} />
+            ) : user ? (
+              <div style={{ position: "relative" }}>
+                <button
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    columnGap: "0.5rem",
+                    padding: 0
+                  }}
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                >
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt={user.displayName || "User"} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid var(--green-color)" }} />
+                  ) : (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--first-color)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem", fontWeight: 700 }}>
+                      {(user.displayName || user.email || "U").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </button>
+                {showUserDropdown && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "calc(100% + 0.5rem)",
+                      backgroundColor: "var(--container-color)",
+                      border: "1px solid rgba(100, 116, 139, 0.15)",
+                      borderRadius: "0.75rem",
+                      padding: "0.75rem",
+                      minWidth: "160px",
+                      zIndex: 1000,
+                      boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)"
+                    }}
+                  >
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-color-light)", marginBottom: "0.5rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Hi, {user.displayName || user.email?.split("@")[0] || "User"}
+                    </div>
+                    <button
+                      onClick={() => {
+                        logOut();
+                        setShowUserDropdown(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        columnGap: "0.5rem",
+                        width: "100%",
+                        padding: "0.5rem",
+                        borderRadius: "0.5rem",
+                        border: "none",
+                        background: "rgba(239, 68, 68, 0.08)",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      <i className="uil uil-signout"></i> Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  columnGap: "0.35rem",
+                  background: "var(--first-color)",
+                  color: "#fff",
+                  padding: "0.4rem 0.9rem",
+                  borderRadius: "2rem",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  transition: "background 0.2s"
+                }}
+              >
+                <i className="uil uil-signin" style={{ fontSize: "1rem" }}></i> Login
+              </button>
+            )}
+          </div>
         </nav>
+      </button> {/* Note: there was an extra </button> in source that is actually a header tag close but here it closes nav or head */}
       </header>
+
+      {/* Auth Modal Overlay */}
+      {showAuthModal && (
+        <div 
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 99999,
+            padding: "1rem"
+          }}
+          onClick={() => {
+            setShowAuthModal(false);
+            resetForm();
+          }}
+        >
+          <div 
+            style={{
+              backgroundColor: "var(--container-color)",
+              border: "1px solid rgba(100, 116, 139, 0.15)",
+              borderRadius: "1.25rem",
+              padding: "2rem",
+              maxWidth: "400px",
+              width: "100%",
+              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25)",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => {
+                setShowAuthModal(false);
+                resetForm();
+              }}
+              style={{
+                position: "absolute",
+                top: "1rem",
+                right: "1rem",
+                background: "transparent",
+                border: "none",
+                fontSize: "1.5rem",
+                color: "var(--text-color-light)",
+                cursor: "pointer",
+                padding: "0.25rem",
+                lineHeight: 1
+              }}
+            >
+              <i className="uil uil-times"></i>
+            </button>
+
+            {/* Title / Tabs */}
+            <div style={{ display: "flex", borderBottom: "1px solid rgba(100, 116, 139, 0.15)", marginBottom: "1.5rem" }}>
+              <button 
+                onClick={() => { setAuthTab("signin"); setAuthError(""); }}
+                style={{
+                  flex: 1,
+                  padding: "0.75rem 0.5rem",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: authTab === "signin" ? "2px solid var(--green-color)" : "2px solid transparent",
+                  color: authTab === "signin" ? "var(--title-color)" : "var(--text-color-light)",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={() => { setAuthTab("signup"); setAuthError(""); }}
+                style={{
+                  flex: 1,
+                  padding: "0.75rem 0.5rem",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: authTab === "signup" ? "2px solid var(--green-color)" : "2px solid transparent",
+                  color: authTab === "signup" ? "var(--title-color)" : "var(--text-color-light)",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {authError && (
+              <div 
+                style={{
+                  backgroundColor: "rgba(239, 68, 68, 0.08)",
+                  border: "1px solid rgba(239, 68, 68, 0.2)",
+                  color: "#ef4444",
+                  padding: "0.75rem",
+                  borderRadius: "0.5rem",
+                  fontSize: "0.8rem",
+                  marginBottom: "1rem",
+                  lineHeight: "1.4"
+                }}
+              >
+                {authError}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={authTab === "signin" ? handleSignIn : handleSignUp} style={{ display: "flex", flexDirection: "column", rowGap: "1rem" }}>
+              {authTab === "signup" && (
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Full Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter your name" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.2)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      outline: "none",
+                      fontSize: "0.85rem"
+                    }}
+                  />
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Email Address</label>
+                <input 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{
+                    padding: "0.6rem 0.85rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid rgba(100, 116, 139, 0.2)",
+                    backgroundColor: "var(--container-color)",
+                    color: "var(--title-color)",
+                    outline: "none",
+                    fontSize: "0.85rem"
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Password</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  style={{
+                    padding: "0.6rem 0.85rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid rgba(100, 116, 139, 0.2)",
+                    backgroundColor: "var(--container-color)",
+                    color: "var(--title-color)",
+                    outline: "none",
+                    fontSize: "0.85rem"
+                  }}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={authLoadingState}
+                style={{
+                  backgroundColor: "var(--first-color)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  padding: "0.75rem",
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                  marginTop: "0.5rem",
+                  transition: "background 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  columnGap: "0.5rem"
+                }}
+              >
+                {authLoadingState ? (
+                  <div className="portfolio-loader-circle" style={{ width: "16px", height: "16px", borderWidth: "2px", borderColor: "rgba(255,255,255,0.2)", borderTopColor: "#fff" }} />
+                ) : null}
+                {authTab === "signin" ? "Sign In" : "Create Account"}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div style={{ display: "flex", alignItems: "center", margin: "1.5rem 0", columnGap: "0.5rem" }}>
+              <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(100, 116, 139, 0.15)" }}></div>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-color-light)", fontWeight: 500, textTransform: "uppercase" }}>Or Continue With</span>
+              <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(100, 116, 139, 0.15)" }}></div>
+            </div>
+
+            {/* Google Login Button */}
+            <button 
+              onClick={handleGoogleSignIn}
+              disabled={authLoadingState}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                columnGap: "0.5rem",
+                backgroundColor: "transparent",
+                border: "1px solid rgba(100, 116, 139, 0.2)",
+                borderRadius: "0.5rem",
+                padding: "0.6rem",
+                cursor: "pointer",
+                color: "var(--title-color)",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                transition: "background 0.2s"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(100, 116, 139, 0.05)"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" style={{ marginRight: "0.25rem" }}>
+                <path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1.1-.8 2-1.8 2.6v2.2h2.9c1.7-1.6 2.7-4 2.7-6.4z"/>
+                <path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.8-3.1.8-2.4 0-4.4-1.6-5.1-3.8H.9v2.3C2.4 15.9 5.5 18 9 18z"/>
+                <path fill="#FBBC05" d="M3.9 10.6c-.2-.5-.3-1.1-.3-1.6s.1-1.1.3-1.6V5.1H.9C.3 6.3 0 7.6 0 9s.3 2.7.9 3.9l3-2.3z"/>
+                <path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6C13.5 1 11.4 0 9 0 5.5 0 2.4 2.1.9 5.1l3 2.3c.7-2.2 2.7-3.8 5.1-3.8z"/>
+              </svg>
+              Google Account
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
