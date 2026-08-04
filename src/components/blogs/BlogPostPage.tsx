@@ -126,28 +126,35 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
     };
   }, [blogId, user]);
 
-  // Toggle user like status
+  // Toggle user like status with optimistic UI updates and rule error alerts
   const handleLikeToggle = async () => {
     if (!user) {
       alert("Please login first to like this article!");
       return;
     }
+    const originalLiked = liked;
+    const originalCount = likesCount;
+
     try {
       if (liked) {
-        await unlikeBlogPost(blogId, user.uid);
         setLiked(false);
         setLikesCount(prev => Math.max(prev - 1, 0));
+        await unlikeBlogPost(blogId, user.uid);
       } else {
-        await likeBlogPost(blogId, user.uid);
         setLiked(true);
         setLikesCount(prev => prev + 1);
+        await likeBlogPost(blogId, user.uid);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Toggle like failed:", err);
+      // Revert states
+      setLiked(originalLiked);
+      setLikesCount(originalCount);
+      alert("Failed to toggle like on Firestore. This is usually caused by database permission rules blocking the write operation on 'blogs/" + blogId + "/likes'. Please check your Firebase Firestore rules.");
     }
   };
 
-  // Add Comment Submit
+  // Add Comment Submit with rule error alerts
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -158,21 +165,23 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
       const added = await addCommentToBlogPost(blogId, newCommentText.trim(), user);
       setComments(prev => [...prev, added]);
       setNewCommentText("");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Add comment failed:", err);
+      alert("Failed to submit comment to Firestore. This is usually caused by database permission rules blocking writes on 'blogs/" + blogId + "/comments'. Please verify your Firebase Firestore rules.");
     } finally {
       setSubmittingComment(false);
     }
   };
 
-  // Delete Comment Action
+  // Delete Comment Action with rule error alerts
   const handleDeleteComment = async (commentId: string) => {
     if (!window.confirm("Are you sure you want to delete this comment?")) return;
     try {
       await deleteCommentFromBlogPost(blogId, commentId);
       setComments(prev => prev.filter(c => c.id !== commentId));
-    } catch (err) {
+    } catch (err: any) {
       console.error("Delete comment failed:", err);
+      alert("Failed to delete comment from Firestore. This is usually caused by database rules blocking deletes on 'blogs/" + blogId + "/comments/" + commentId + "'.");
     }
   };
 
