@@ -1,7 +1,7 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
-import { initializeAuth, browserLocalPersistence, browserSessionPersistence, Auth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence, browserSessionPersistence, Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -21,12 +21,21 @@ let isFirebaseConfigured = false;
 // Check if critical configuration variables are set
 if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "PLACEHOLDER") {
   try {
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);
     storage = getStorage(app);
-    auth = initializeAuth(app, {
-      persistence: [browserLocalPersistence, browserSessionPersistence]
-    });
+    auth = getAuth(app);
+    
+    // Safely configure persistence to avoid IndexedDB lock crashes in private browsing or iframe sandboxes
+    setPersistence(auth, browserLocalPersistence)
+      .catch((err) => {
+        console.warn("Failed to set IndexedDB local persistence, falling back to session storage:", err);
+        return setPersistence(auth!, browserSessionPersistence);
+      })
+      .catch((err) => {
+        console.error("Failed to set fallback persistence:", err);
+      });
+
     isFirebaseConfigured = true;
     console.log("Firebase Firestore, Storage, and Auth initialized successfully.");
   } catch (error) {
