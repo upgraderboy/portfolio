@@ -817,14 +817,38 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                   ></textarea>
                 </div>
                 <div className="admin__form-group admin__form-group--full">
-                  <label className="admin__form-label">Home Profile Image URL</label>
-                  <input
-                    type="text"
-                    className="admin__form-input"
-                    placeholder="Enter image URL (e.g. raw GitHub URL or direct link)"
-                    value={homeImageUrl}
-                    onChange={(e) => setHomeImageUrl(e.target.value)}
-                  />
+                  <label className="admin__form-label">Home Profile Image (URL or Upload)</label>
+                  <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="Image URL or Local Upload"
+                      value={homeImageUrl.startsWith("data:image") ? "Local Image File Uploaded" : homeImageUrl}
+                      onChange={(e) => setHomeImageUrl(e.target.value)}
+                      disabled={homeImageUrl.startsWith("data:image")}
+                      style={{ flexGrow: 1 }}
+                    />
+                    <label className="memories__form-file-label" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <i className="uil uil-image-plus"></i> Upload Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleImageUpload(e, setHomeImageUrl)}
+                      />
+                    </label>
+                    {homeImageUrl && (
+                      <button 
+                        type="button" 
+                        className="admin__action-btn admin__action-btn--delete" 
+                        onClick={() => setHomeImageUrl("")} 
+                        style={{ height: "100%", width: "42px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        title="Remove Image"
+                      >
+                        <i className="uil uil-trash-alt"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -904,14 +928,38 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                   </div>
                 </div>
                 <div className="admin__form-group admin__form-group--full">
-                  <label className="admin__form-label">About Section Image URL</label>
-                  <input
-                    type="text"
-                    className="admin__form-input"
-                    placeholder="Enter image URL (e.g. raw GitHub URL or direct link)"
-                    value={aboutImageUrl}
-                    onChange={(e) => setAboutImageUrl(e.target.value)}
-                  />
+                  <label className="admin__form-label">About Section Image (URL or Upload)</label>
+                  <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="Image URL or Local Upload"
+                      value={aboutImageUrl.startsWith("data:image") ? "Local Image File Uploaded" : aboutImageUrl}
+                      onChange={(e) => setAboutImageUrl(e.target.value)}
+                      disabled={aboutImageUrl.startsWith("data:image")}
+                      style={{ flexGrow: 1 }}
+                    />
+                    <label className="memories__form-file-label" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <i className="uil uil-image-plus"></i> Upload Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleImageUpload(e, setAboutImageUrl)}
+                      />
+                    </label>
+                    {aboutImageUrl && (
+                      <button 
+                        type="button" 
+                        className="admin__action-btn admin__action-btn--delete" 
+                        onClick={() => setAboutImageUrl("")} 
+                        style={{ height: "100%", width: "42px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        title="Remove Image"
+                      >
+                        <i className="uil uil-trash-alt"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
