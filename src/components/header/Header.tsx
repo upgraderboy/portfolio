@@ -371,7 +371,6 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
             )}
           </div>
         </nav>
-      </button> {/* Note: there was an extra </button> in source that is actually a header tag close but here it closes nav or head */}
       </header>
 
       {/* Auth Modal Overlay */}
