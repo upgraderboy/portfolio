@@ -6,19 +6,29 @@ import "./header.css";
 import Mode from "../mode/Mode.jsx";
 
 // import "../../../public/share.js";
-const Header: React.FC = ()=>{
+interface HeaderProps {
+  currentRoute: string;
+  navigate: (to: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
   const [dark, setMode] = useState(localStorage.getItem("mode") === "light" ? true : false);
   const [Toggle, showMenu] = useState(false);
   
   const [activeNav, setActiveNav] = useState("#home");
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
-    if (window.location.pathname !== "/") {
+    if (currentRoute !== "/") {
       e.preventDefault();
-      window.location.href = "/" + hash;
+      navigate("/" + hash);
     } else {
       setActiveNav(hash);
     }
+  };
+
+  const handleSubrouteClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault();
+    navigate(path);
   };
   
   // const [toggleState, setToggleState] = useState(false);
@@ -55,7 +65,7 @@ const Header: React.FC = ()=>{
           </a>
           <div className={Toggle ? "nav__menu show-menu" : "nav__menu"}>
             <ul className="nav__list">
-              {window.location.pathname === "/" ? (
+              {currentRoute === "/" ? (
                 <>
                   <li className="nav__item">
                     <a
@@ -135,6 +145,7 @@ const Header: React.FC = ()=>{
                   <li className="nav__item">
                     <a
                       href="/"
+                      onClick={(e) => handleSubrouteClick(e, "/")}
                       className="nav__link"
                     >
                       <i className="uil uil-estate nav__icon"></i>Home
@@ -143,7 +154,8 @@ const Header: React.FC = ()=>{
                   <li className="nav__item">
                     <a
                       href="/memories"
-                      className={window.location.pathname === "/memories" ? "nav__link active-link" : "nav__link"}
+                      onClick={(e) => handleSubrouteClick(e, "/memories")}
+                      className={currentRoute === "/memories" ? "nav__link active-link" : "nav__link"}
                     >
                       <i className="uil uil-history nav__icon"></i>Memories
                     </a>
@@ -151,7 +163,8 @@ const Header: React.FC = ()=>{
                   <li className="nav__item">
                     <a
                       href="/projects"
-                      className={window.location.pathname === "/projects" ? "nav__link active-link" : "nav__link"}
+                      onClick={(e) => handleSubrouteClick(e, "/projects")}
+                      className={currentRoute === "/projects" ? "nav__link active-link" : "nav__link"}
                     >
                       <i className="uil uil-briefcase nav__icon"></i>Projects
                     </a>
@@ -159,7 +172,8 @@ const Header: React.FC = ()=>{
                   <li className="nav__item">
                     <a
                       href="/resources"
-                      className={window.location.pathname === "/resources" ? "nav__link active-link" : "nav__link"}
+                      onClick={(e) => handleSubrouteClick(e, "/resources")}
+                      className={currentRoute === "/resources" ? "nav__link active-link" : "nav__link"}
                     >
                       <i className="uil uil-book-open nav__icon"></i>Resources
                     </a>
@@ -167,7 +181,8 @@ const Header: React.FC = ()=>{
                   <li className="nav__item">
                     <a
                       href="/blogs"
-                      className={(window.location.pathname === "/blogs" || window.location.pathname.startsWith("/blog/")) ? "nav__link active-link" : "nav__link"}
+                      onClick={(e) => handleSubrouteClick(e, "/blogs")}
+                      className={(currentRoute === "/blogs" || currentRoute.startsWith("/blog/")) ? "nav__link active-link" : "nav__link"}
                     >
                       <i className="uil uil-book-reader nav__icon"></i>Blogs
                     </a>
@@ -175,6 +190,7 @@ const Header: React.FC = ()=>{
                   <li className="nav__item">
                     <a
                       href="/#contact"
+                      onClick={(e) => handleSubrouteClick(e, "/#contact")}
                       className="nav__link"
                     >
                       <i className="uil uil-message nav__icon"></i>Contact

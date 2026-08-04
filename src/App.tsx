@@ -29,7 +29,6 @@ interface PortfolioContentProps {
 const PortfolioContent: React.FC<PortfolioContentProps> = ({ navigate }) => {
   return (
     <>
-      <Header />
       <Home />
       <Terminal />
       <About />
@@ -172,6 +171,7 @@ const AppContent: React.FC = () => {
 
   return (
     <>
+      {route !== "/admin" && <Header currentRoute={route} navigate={navigate} />}
       {renderContent()}
     </>
   );
