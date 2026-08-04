@@ -36,7 +36,7 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding: 1.5rem;
+      padding: 1rem 1rem 4.5rem 1rem;
     }
 
     /* Flipbook Container */
@@ -47,7 +47,7 @@
       justify-content: center;
       align-items: center;
       position: relative;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
     }
 
     #book {
@@ -111,6 +111,10 @@
 
     /* Toolbar bottom panel */
     .toolbar {
+      position: absolute;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
       background-color: var(--card-color);
       border: 1px solid var(--border-color);
       border-radius: 2rem;
@@ -220,9 +224,10 @@
     // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/build/pdf.worker.js";
 
-    // Grab file from URL
+    // Grab file and cover from URL
     const urlParams = new URLSearchParams(window.location.search);
     const pdfUrl = urlParams.get("file");
+    const coverUrl = urlParams.get("cover");
 
     if (!pdfUrl) {
       document.getElementById("loader").innerHTML = "<div>Error: No PDF URL specified.</div>";
@@ -326,12 +331,28 @@
       // Clear book container in case of multiple retries
       bookDiv.innerHTML = "";
 
+      // Prepend cover page at index 0 if coverUrl is specified
+      if (coverUrl && coverUrl.trim() !== "") {
+        const coverDiv = document.createElement("div");
+        coverDiv.className = "page";
+        coverDiv.setAttribute("data-page", 0);
+        
+        const img = document.createElement("img");
+        img.src = coverUrl;
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.objectFit = "cover";
+        coverDiv.appendChild(img);
+        bookDiv.appendChild(coverDiv);
+      }
+
       // Grab first page to calculate aspect ratio
       const firstPage = await pdf.getPage(1);
       const originalViewport = firstPage.getViewport({ scale: 1.0 });
       
-      // Target dynamic sizing based on viewport height and width
-      const baseHeight = Math.min(window.innerHeight * 0.75, 750);
+      // Target dynamic sizing based on viewport height and width (subtracting margins to prevent overflow)
+      const viewportEl = document.querySelector(".flipbook-viewport");
+      const baseHeight = Math.max(Math.min(viewportEl.clientHeight - 20, 750), 300);
       const aspectRatio = originalViewport.width / originalViewport.height;
       const baseWidth = baseHeight * aspectRatio;
 

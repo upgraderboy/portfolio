@@ -101,6 +101,7 @@ export interface ResourceItem {
   categoryPath: string[]; // Node ID path e.g. ["cat-btech", "cat-cs"]
   tags: string[];
   source?: string;
+  thumbnailUrl?: string;
   dateAdded: string;
 }
 

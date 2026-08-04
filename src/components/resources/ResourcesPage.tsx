@@ -167,9 +167,15 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
             <div className="resources__grid">
               {filteredResources.map((res) => (
                 <div className="resources__card" key={res.id}>
-                  <div className="resources__card-icon">
-                    <i className="uil uil-file-pdf"></i>
-                  </div>
+                  {res.thumbnailUrl ? (
+                    <div className="resources__card-cover" style={{ width: "90px", height: "125px", borderRadius: "0.5rem", overflow: "hidden", border: "1px solid rgba(100, 116, 139, 0.15)", flexShrink: 0 }}>
+                      <img src={res.thumbnailUrl} alt={res.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ) : (
+                    <div className="resources__card-icon">
+                      <i className="uil uil-file-pdf"></i>
+                    </div>
+                  )}
                   <div className="resources__card-info">
                     <span className="resources__card-category" title={resolveCategoryPathNames(res.categoryPath)}>
                       {resolveCategoryPathNames(res.categoryPath)}
@@ -199,7 +205,7 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
 
                     <button
                       className="resources__card-btn button button--flex"
-                      onClick={() => window.location.href = `/flipbook/index.html?file=${encodeURIComponent(res.pdfUrl)}`}
+                      onClick={() => window.location.href = `/flipbook/index.html?file=${encodeURIComponent(res.pdfUrl)}&cover=${encodeURIComponent(res.thumbnailUrl || "")}`}
                     >
                       Read Document
                       <i className="uil uil-book-open button__icon" style={{ marginLeft: "0.5rem" }}></i>

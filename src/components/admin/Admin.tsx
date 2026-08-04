@@ -89,6 +89,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [resCategoryPath, setResCategoryPath] = useState<string[]>([]);
   const [resTags, setResTags] = useState("");
   const [resSource, setResSource] = useState("");
+  const [resThumbnailUrl, setResThumbnailUrl] = useState("");
 
   // Category Configuration state
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -471,6 +472,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setResCategoryPath([]);
     setResTags("");
     setResSource("");
+    setResThumbnailUrl("");
   };
 
   // Recursive Tree helpers
@@ -541,6 +543,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
             categoryPath: resCategoryPath,
             tags: parsedTags,
             source: resSource || undefined,
+            thumbnailUrl: resThumbnailUrl || undefined,
           };
         }
         return r;
@@ -557,6 +560,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
         categoryPath: resCategoryPath,
         tags: parsedTags,
         source: resSource || undefined,
+        thumbnailUrl: resThumbnailUrl || undefined,
         dateAdded: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
       };
       updateResources([...resList, newRes]);
@@ -581,6 +585,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setResCategoryPath(r.categoryPath || []);
     setResTags(r.tags.join(", "));
     setResSource(r.source || "");
+    setResThumbnailUrl(r.thumbnailUrl || "");
   };
 
   const handleAddCategory = (e: React.FormEvent) => {
@@ -3354,6 +3359,36 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                   </div>
                 </div>
 
+                {/* Cover Thumbnail Image URL Input / Local Uploader */}
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">PDF Cover Image Thumbnail (URL or Local Image Upload)</label>
+                  <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="Image URL or Local Upload"
+                      value={resThumbnailUrl.startsWith("data:") ? "Local Image File Uploaded" : resThumbnailUrl}
+                      onChange={(e) => setResThumbnailUrl(e.target.value)}
+                      disabled={resThumbnailUrl.startsWith("data:")}
+                      style={{ flexGrow: 1 }}
+                    />
+                    <label className="memories__form-file-label" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <i className="uil uil-image-plus"></i> Upload Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleImageUpload(e, setResThumbnailUrl)}
+                      />
+                    </label>
+                    {resThumbnailUrl && (
+                      <button type="button" className="admin__btn admin__btn--danger" onClick={() => setResThumbnailUrl("")} style={{ padding: "0.75rem" }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Cascading Category Selectors */}
                 <div className="admin__form-group admin__form-group--full">
                   <label className="admin__form-label">Category Path Assignment *</label>
@@ -3610,9 +3645,9 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     </div>
 
                     {/* Compact Interactive 3D Flipbook Iframe */}
-                    <div style={{ border: "1px solid rgba(100, 116, 139, 0.15)", borderRadius: "0.5rem", overflow: "hidden", height: "350px", backgroundColor: "#000" }}>
+                    <div style={{ border: "1px solid rgba(100, 116, 139, 0.15)", borderRadius: "0.5rem", overflow: "hidden", height: "600px", backgroundColor: "#000" }}>
                       <iframe 
-                        src={`/flipbook/index.html?file=${encodeURIComponent(r.pdfUrl)}`} 
+                        src={`/flipbook/index.html?file=${encodeURIComponent(r.pdfUrl)}&cover=${encodeURIComponent(r.thumbnailUrl || "")}`} 
                         width="100%" 
                         height="100%" 
                         style={{ border: "none", display: "block" }} 
