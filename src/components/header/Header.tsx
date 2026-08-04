@@ -126,6 +126,16 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
     setAuthError("");
   };
 
+  // Listen for open-auth-modal events to trigger login modal
+  useEffect(() => {
+    const handleOpenAuth = () => {
+      setShowAuthModal(true);
+      setAuthTab("signin");
+    };
+    window.addEventListener("open-auth-modal", handleOpenAuth);
+    return () => window.removeEventListener("open-auth-modal", handleOpenAuth);
+  }, []);
+
   // Fetch extra profile details when the profile modal is opened
   useEffect(() => {
     if (!showProfileModal || !user) return;

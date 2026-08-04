@@ -40,24 +40,31 @@ interface BlogPostPageProps {
 }
 
 const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
-  const { fetchBlogPost, portfolioData } = usePortfolioData();
+  const { 
+    fetchBlogPost, 
+    portfolioData,
+    user,
+    likeBlogPost,
+    unlikeBlogPost,
+    checkUserLikedBlogPost,
+    fetchBlogPostLikesCount,
+    addCommentToBlogPost,
+    deleteCommentFromBlogPost,
+    fetchBlogPostComments
+  } = usePortfolioData();
+
   const [blog, setBlog] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [claps, setClaps] = useState(0);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Load claps count from localStorage
-  useEffect(() => {
-    const savedClaps = localStorage.getItem(`blog_claps_${blogId}`);
-    if (savedClaps) {
-      setClaps(parseInt(savedClaps, 10));
-    } else {
-      // Default baseline claps count
-      setClaps(Math.floor(Math.random() * 25) + 12);
-    }
-  }, [blogId]);
+  // Comments and Likes States
+  const [likesCount, setLikesCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   // Scroll Progress Bar Tracker
   useEffect(() => {
@@ -89,11 +96,84 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
     };
   }, [blogId, portfolioData.blogs, fetchBlogPost]);
 
-  // Trigger clap appreciation increments
-  const handleClap = () => {
-    const newClaps = claps + 1;
-    setClaps(newClaps);
-    localStorage.setItem(`blog_claps_${blogId}`, newClaps.toString());
+  // Load likes and comments once user or blogId shifts
+  useEffect(() => {
+    let active = true;
+    
+    const loadCommentsAndLikes = async () => {
+      if (!blogId) return;
+      try {
+        const count = await fetchBlogPostLikesCount(blogId);
+        if (active) setLikesCount(count);
+
+        if (user) {
+          const hasLiked = await checkUserLikedBlogPost(blogId, user.uid);
+          if (active) setLiked(hasLiked);
+        } else {
+          if (active) setLiked(false);
+        }
+
+        const commentsList = await fetchBlogPostComments(blogId);
+        if (active) setComments(commentsList);
+      } catch (err) {
+        console.error("Failed to load interaction metrics:", err);
+      }
+    };
+
+    loadCommentsAndLikes();
+    return () => {
+      active = false;
+    };
+  }, [blogId, user]);
+
+  // Toggle user like status
+  const handleLikeToggle = async () => {
+    if (!user) {
+      alert("Please login first to like this article!");
+      return;
+    }
+    try {
+      if (liked) {
+        await unlikeBlogPost(blogId, user.uid);
+        setLiked(false);
+        setLikesCount(prev => Math.max(prev - 1, 0));
+      } else {
+        await likeBlogPost(blogId, user.uid);
+        setLiked(true);
+        setLikesCount(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error("Toggle like failed:", err);
+    }
+  };
+
+  // Add Comment Submit
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (!newCommentText.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const added = await addCommentToBlogPost(blogId, newCommentText.trim(), user);
+      setComments(prev => [...prev, added]);
+      setNewCommentText("");
+    } catch (err) {
+      console.error("Add comment failed:", err);
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  // Delete Comment Action
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      await deleteCommentFromBlogPost(blogId, commentId);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch (err) {
+      console.error("Delete comment failed:", err);
+    }
   };
 
   // Copy article link to clipboard
@@ -395,9 +475,10 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
             gap: "1.5rem"
           }}
         >
+          {/* Heart Like Toggle Button */}
           <div style={{ display: "flex", alignItems: "center", columnGap: "0.75rem" }}>
             <button 
-              onClick={handleClap}
+              onClick={handleLikeToggle}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -405,21 +486,22 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
                 width: "48px",
                 height: "48px",
                 borderRadius: "50%",
-                background: "rgba(1, 195, 105, 0.08)",
-                border: "1px solid rgba(1, 195, 105, 0.2)",
+                background: liked ? "rgba(239, 68, 68, 0.08)" : "rgba(100, 116, 139, 0.08)",
+                border: liked ? "1px solid rgba(239, 68, 68, 0.2)" : "1px solid rgba(100, 116, 139, 0.15)",
+                color: liked ? "#ef4444" : "var(--text-color-light)",
                 cursor: "pointer",
-                transition: "transform 0.15s ease",
+                transition: "all 0.2s ease",
                 outline: "none"
               }}
               onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.9)"}
               onMouseUp={(e) => e.currentTarget.style.transform = "scale(1.1)"}
               onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-              title="Clap for this post!"
+              title={liked ? "Unlike this article" : "Like this article"}
             >
-              <span style={{ fontSize: "1.5rem" }}>👏</span>
+              <i className={liked ? "uis uis-heart" : "uil uil-heart"} style={{ fontSize: "1.5rem", color: liked ? "#ef4444" : "inherit" }}></i>
             </button>
-            <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--title-color)" }}>
-              {claps} claps
+            <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--title-color)" }}>
+              {likesCount} likes
             </span>
           </div>
 
@@ -526,6 +608,177 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
               Software Developer & Tech Innovator. I write about full-stack web architectures, systems engineering, clean code structures, and learning in public.
             </p>
           </div>
+        </div>
+
+        {/* Interactive & Scalable Comments Section */}
+        <div style={{ marginTop: "4rem", borderTop: "1px solid rgba(100, 116, 139, 0.15)", paddingTop: "3rem" }}>
+          <h3 style={{ fontSize: "1.3rem", color: "var(--title-color)", marginBottom: "2rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <i className="uil uil-comments" style={{ color: "var(--green-color)", fontSize: "1.5rem" }}></i> Discussion ({comments.length})
+          </h3>
+
+          {/* Comment Form */}
+          {user ? (
+            <form onSubmit={handleAddComment} style={{ display: "flex", flexDirection: "column", rowGap: "0.75rem", marginBottom: "3rem" }}>
+              <div style={{ display: "flex", columnGap: "0.75rem", alignItems: "start" }}>
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || "User"} style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid var(--green-color)" }} />
+                ) : (
+                  <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "var(--first-color)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", fontWeight: 700, flexShrink: 0 }}>
+                    {(user.displayName || user.email || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <textarea
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  placeholder="Share your thoughts on this article..."
+                  required
+                  rows={3}
+                  style={{
+                    flexGrow: 1,
+                    padding: "0.85rem",
+                    borderRadius: "0.75rem",
+                    border: "1px solid rgba(100, 116, 139, 0.2)",
+                    backgroundColor: "var(--container-color)",
+                    color: "var(--title-color)",
+                    fontSize: "0.9rem",
+                    outline: "none",
+                    resize: "none",
+                    fontFamily: "inherit",
+                    lineHeight: "1.5"
+                  }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submittingComment || !newCommentText.trim()}
+                style={{
+                  alignSelf: "flex-end",
+                  backgroundColor: "var(--green-color)",
+                  color: "#fff",
+                  padding: "0.6rem 1.5rem",
+                  borderRadius: "2rem",
+                  border: "none",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  transition: "background 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  columnGap: "0.5rem"
+                }}
+              >
+                {submittingComment && (
+                  <div className="portfolio-loader-circle" style={{ width: "14px", height: "14px", borderWidth: "2px", borderColor: "rgba(255,255,255,0.2)", borderTopColor: "#fff" }} />
+                )}
+                Post Comment
+              </button>
+            </form>
+          ) : (
+            <div 
+              style={{ 
+                padding: "2rem", 
+                borderRadius: "0.75rem", 
+                border: "1px dashed rgba(100, 116, 139, 0.25)", 
+                textAlign: "center", 
+                background: "rgba(100, 116, 139, 0.02)",
+                marginBottom: "3rem"
+              }}
+            >
+              <i className="uil uil-lock" style={{ fontSize: "2rem", color: "var(--text-color-light)", marginBottom: "0.5rem", display: "inline-block" }}></i>
+              <p style={{ margin: "0 0 1rem 0", color: "var(--text-color-light)", fontSize: "0.9rem" }}>Please log in to participate in the discussion.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const event = new CustomEvent("open-auth-modal");
+                  window.dispatchEvent(event);
+                }}
+                style={{
+                  background: "var(--first-color)",
+                  color: "#fff",
+                  border: "none",
+                  padding: "0.5rem 1.5rem",
+                  borderRadius: "2rem",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                Log In / Register
+              </button>
+            </div>
+          )}
+
+          {/* Comments List */}
+          {comments.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", rowGap: "1.5rem" }}>
+              {comments.map((comment) => {
+                const isOwnComment = user && user.uid === comment.userId;
+                const isAuthorComment = comment.userName === "Ankit Bhuria" || comment.userId === "mock-google-id" || comment.userId?.includes("mock-google");
+                
+                return (
+                  <div 
+                    key={comment.id}
+                    style={{
+                      display: "flex",
+                      columnGap: "1rem",
+                      alignItems: "start",
+                      paddingBottom: "1.5rem",
+                      borderBottom: "1px solid rgba(100, 116, 139, 0.1)"
+                    }}
+                  >
+                    {comment.userPhoto ? (
+                      <img src={comment.userPhoto} alt={comment.userName} style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "38px", height: "38px", borderRadius: "50%", backgroundColor: "var(--first-color)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", fontWeight: 700, flexShrink: 0 }}>
+                        {comment.userName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+
+                    <div style={{ flexGrow: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", columnGap: "0.5rem", flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 600, color: "var(--title-color)", fontSize: "0.9rem" }}>{comment.userName}</span>
+                          {isAuthorComment && (
+                            <span style={{ backgroundColor: "rgba(1, 195, 105, 0.1)", color: "var(--green-color)", fontSize: "0.65rem", padding: "0.15rem 0.4rem", borderRadius: "4px", fontWeight: 700, textTransform: "uppercase" }}>Author</span>
+                          )}
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-color-light)" }}>
+                            {new Date(comment.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        </div>
+
+                        {isOwnComment && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "rgba(239, 68, 68, 0.7)",
+                              cursor: "pointer",
+                              fontSize: "1.1rem",
+                              padding: "0.25rem",
+                              transition: "color 0.2s"
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"}
+                            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(239, 68, 68, 0.7)"}
+                            title="Delete comment"
+                          >
+                            <i className="uil uil-trash-alt"></i>
+                          </button>
+                        )}
+                      </div>
+                      <p style={{ margin: "0.35rem 0 0 0", color: "var(--text-color)", fontSize: "0.9rem", lineHeight: "1.6", whiteSpace: "pre-wrap" }}>
+                        {comment.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-color-light)", fontSize: "0.9rem" }}>
+              No comments yet. Be the first to share your thoughts!
+            </div>
+          )}
         </div>
 
         {/* Read Next / Related Posts Section */}

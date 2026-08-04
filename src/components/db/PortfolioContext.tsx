@@ -39,6 +39,15 @@ interface PortfolioContextType {
   fetchMemories: (limitCount?: number) => Promise<any[]>;
   fetchBlogs: (limitCount?: number) => Promise<any[]>;
   fetchBlogPost: (id: string) => Promise<any | null>;
+
+  // Comments and Likes Scalable Actions
+  likeBlogPost: (blogId: string, userId: string) => Promise<void>;
+  unlikeBlogPost: (blogId: string, userId: string) => Promise<void>;
+  checkUserLikedBlogPost: (blogId: string, userId: string) => Promise<boolean>;
+  fetchBlogPostLikesCount: (blogId: string) => Promise<number>;
+  addCommentToBlogPost: (blogId: string, text: string, user: any) => Promise<any>;
+  deleteCommentFromBlogPost: (blogId: string, commentId: string) => Promise<void>;
+  fetchBlogPostComments: (blogId: string) => Promise<any[]>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -447,6 +456,131 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Likes Actions
+  const likeBlogPost = async (blogId: string, userId: string) => {
+    if (isFirebaseConfigured && db) {
+      const docRef = doc(db, "blogs", blogId, "likes", userId);
+      await setDoc(docRef, {
+        likedAt: new Date().toISOString(),
+        userId
+      });
+    } else {
+      const likesKey = `mock_likes_${blogId}`;
+      const listStr = localStorage.getItem(likesKey) || "[]";
+      const list = JSON.parse(listStr);
+      if (!list.includes(userId)) {
+        list.push(userId);
+        localStorage.setItem(likesKey, JSON.stringify(list));
+      }
+    }
+  };
+
+  const unlikeBlogPost = async (blogId: string, userId: string) => {
+    if (isFirebaseConfigured && db) {
+      const docRef = doc(db, "blogs", blogId, "likes", userId);
+      await deleteDoc(docRef);
+    } else {
+      const likesKey = `mock_likes_${blogId}`;
+      const listStr = localStorage.getItem(likesKey) || "[]";
+      const list = JSON.parse(listStr);
+      const filtered = list.filter((id: string) => id !== userId);
+      localStorage.setItem(likesKey, JSON.stringify(filtered));
+    }
+  };
+
+  const checkUserLikedBlogPost = async (blogId: string, userId: string): Promise<boolean> => {
+    if (isFirebaseConfigured && db) {
+      const docRef = doc(db, "blogs", blogId, "likes", userId);
+      const snap = await getDoc(docRef);
+      return snap.exists();
+    } else {
+      const likesKey = `mock_likes_${blogId}`;
+      const listStr = localStorage.getItem(likesKey) || "[]";
+      const list = JSON.parse(listStr);
+      return list.includes(userId);
+    }
+  };
+
+  const fetchBlogPostLikesCount = async (blogId: string): Promise<number> => {
+    if (isFirebaseConfigured && db) {
+      try {
+        const colRef = collection(db, "blogs", blogId, "likes");
+        const snap = await getDocs(colRef);
+        return snap.size;
+      } catch (err) {
+        console.error("Failed to fetch likes count from Firestore:", err);
+        return 0;
+      }
+    } else {
+      const likesKey = `mock_likes_${blogId}`;
+      const listStr = localStorage.getItem(likesKey) || "[]";
+      const list = JSON.parse(listStr);
+      return list.length;
+    }
+  };
+
+  // Comments Actions
+  const addCommentToBlogPost = async (blogId: string, text: string, currentUser: any): Promise<any> => {
+    const newComment = {
+      userId: currentUser.uid,
+      userName: currentUser.displayName || currentUser.email?.split("@")[0] || "Anonymous",
+      userPhoto: currentUser.photoURL || null,
+      text,
+      timestamp: new Date().toISOString()
+    };
+
+    if (isFirebaseConfigured && db) {
+      const colRef = collection(db, "blogs", blogId, "comments");
+      const docRef = doc(colRef);
+      const commentWithId = { ...newComment, id: docRef.id };
+      await setDoc(docRef, commentWithId);
+      return commentWithId;
+    } else {
+      const commentsKey = `mock_comments_${blogId}`;
+      const listStr = localStorage.getItem(commentsKey) || "[]";
+      const list = JSON.parse(listStr);
+      const commentWithId = { ...newComment, id: "mock-comment-" + Date.now() };
+      list.push(commentWithId);
+      localStorage.setItem(commentsKey, JSON.stringify(list));
+      return commentWithId;
+    }
+  };
+
+  const deleteCommentFromBlogPost = async (blogId: string, commentId: string) => {
+    if (isFirebaseConfigured && db) {
+      const docRef = doc(db, "blogs", blogId, "comments", commentId);
+      await deleteDoc(docRef);
+    } else {
+      const commentsKey = `mock_comments_${blogId}`;
+      const listStr = localStorage.getItem(commentsKey) || "[]";
+      const list = JSON.parse(listStr);
+      const filtered = list.filter((c: any) => c.id !== commentId);
+      localStorage.setItem(commentsKey, JSON.stringify(filtered));
+    }
+  };
+
+  const fetchBlogPostComments = async (blogId: string): Promise<any[]> => {
+    if (isFirebaseConfigured && db) {
+      try {
+        const colRef = collection(db, "blogs", blogId, "comments");
+        const snap = await getDocs(colRef);
+        const list: any[] = [];
+        snap.forEach((doc) => {
+          list.push({ ...doc.data(), id: doc.id });
+        });
+        return list.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      } catch (err) {
+        console.error("Failed to fetch comments from Firestore:", err);
+        return [];
+      }
+    } else {
+      const commentsKey = `mock_comments_${blogId}`;
+      const listStr = localStorage.getItem(commentsKey) || "[]";
+      const list = JSON.parse(listStr);
+      return list.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }
+  };
+
   return (
     <PortfolioContext.Provider
       value={{
@@ -459,6 +593,13 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         signUpWithEmail,
         logOut,
         refreshUser,
+        likeBlogPost,
+        unlikeBlogPost,
+        checkUserLikedBlogPost,
+        fetchBlogPostLikesCount,
+        addCommentToBlogPost,
+        deleteCommentFromBlogPost,
+        fetchBlogPostComments,
         updateHomeAbout,
         updateSkills,
         updateServices,
