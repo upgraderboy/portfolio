@@ -51,6 +51,8 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [aboutProjects, setAboutProjects] = useState(portfolioData.about.completedProjects);
   const [aboutSupport, setAboutSupport] = useState(portfolioData.about.supportAvailability);
   const [aboutCvUrl, setAboutCvUrl] = useState(portfolioData.about.cvUrl || "");
+  const [homeImageUrl, setHomeImageUrl] = useState(portfolioData.home.imageUrl || "");
+  const [aboutImageUrl, setAboutImageUrl] = useState(portfolioData.about.imageUrl || "");
 
   // Projects State Form
   const [projTitle, setProjTitle] = useState("");
@@ -182,10 +184,12 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setHomeName(portfolioData.home.name);
     setHomeSubtitle(portfolioData.home.subtitle);
     setHomeDescription(portfolioData.home.description);
+    setHomeImageUrl(portfolioData.home.imageUrl || "");
     setAboutDescription(portfolioData.about.description);
     setAboutExpYears(portfolioData.about.experienceYears);
     setAboutProjects(portfolioData.about.completedProjects);
     setAboutSupport(portfolioData.about.supportAvailability);
+    setAboutImageUrl(portfolioData.about.imageUrl || "");
   }, [portfolioData]);
 
   // Auth Handler
@@ -311,13 +315,14 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const handleSaveHomeAbout = (e: React.FormEvent) => {
     e.preventDefault();
     updateHomeAbout(
-      { name: homeName, subtitle: homeSubtitle, description: homeDescription },
+      { name: homeName, subtitle: homeSubtitle, description: homeDescription, imageUrl: homeImageUrl },
       {
         description: aboutDescription,
         experienceYears: aboutExpYears,
         completedProjects: aboutProjects,
         supportAvailability: aboutSupport,
         cvUrl: aboutCvUrl,
+        imageUrl: aboutImageUrl,
       }
     );
     alert("Home and About sections updated successfully!");
@@ -811,6 +816,16 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     required
                   ></textarea>
                 </div>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Home Profile Image URL</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="Enter image URL (e.g. raw GitHub URL or direct link)"
+                    value={homeImageUrl}
+                    onChange={(e) => setHomeImageUrl(e.target.value)}
+                  />
+                </div>
               </div>
 
               <h3 className="admin__form-title" style={{ textAlign: "left", margin: "2rem 0 1.5rem" }}>About Content</h3>
@@ -887,6 +902,16 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                       </button>
                     )}
                   </div>
+                </div>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">About Section Image URL</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="Enter image URL (e.g. raw GitHub URL or direct link)"
+                    value={aboutImageUrl}
+                    onChange={(e) => setAboutImageUrl(e.target.value)}
+                  />
                 </div>
               </div>
 

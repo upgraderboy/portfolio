@@ -25,7 +25,19 @@ interface PortfolioContextType {
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [portfolioData, setPortfolioData] = useState<PortfolioData>(initialPortfolioData);
+  const [portfolioData, setPortfolioData] = useState<PortfolioData>(() => {
+    const cached = localStorage.getItem("portfolio_cached_data");
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        console.log("Portfolio data restored instantly from local cache.");
+        return data;
+      } catch (e) {
+        return initialPortfolioData;
+      }
+    }
+    return initialPortfolioData;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -38,7 +50,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (docSnap.exists()) {
             const data = docSnap.data() as PortfolioData;
             // Merge loaded data with initial schema structure to prevent errors from missing keys
-            setPortfolioData({
+            const merged = {
               ...initialPortfolioData,
               ...data,
               home: { ...initialPortfolioData.home, ...data.home },
@@ -50,12 +62,15 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               testimonials: data.testimonials || initialPortfolioData.testimonials,
               memories: data.memories || initialPortfolioData.memories,
               blogs: data.blogs || initialPortfolioData.blogs,
-            });
-            console.log("Portfolio data loaded successfully from Cloud Firestore.");
+            };
+            setPortfolioData(merged);
+            localStorage.setItem("portfolio_cached_data", JSON.stringify(merged));
+            console.log("Portfolio data loaded successfully from Cloud Firestore and cached locally.");
           } else {
             console.log("No data found in Firestore collection. Provisioning database with defaults...");
             await setDoc(docRef, initialPortfolioData);
             setPortfolioData(initialPortfolioData);
+            localStorage.setItem("portfolio_cached_data", JSON.stringify(initialPortfolioData));
           }
         } catch (e) {
           console.error("Firestore read error:", e);
@@ -91,6 +106,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const saveAndSetData = async (newData: PortfolioData) => {
     const cleanedData = cleanUndefined(newData);
     setPortfolioData(newData);
+    localStorage.setItem("portfolio_cached_data", JSON.stringify(newData));
 
     if (isFirebaseConfigured && db) {
       try {

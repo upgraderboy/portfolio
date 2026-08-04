@@ -59,6 +59,7 @@ export interface PortfolioData {
     name: string;
     subtitle: string;
     description: string;
+    imageUrl?: string;
   };
   about: {
     description: string;
@@ -66,6 +67,7 @@ export interface PortfolioData {
     completedProjects: string;
     supportAvailability: string;
     cvUrl?: string;
+    imageUrl?: string;
   };
   skills: {
     frontend: SkillItem[];
@@ -87,14 +89,16 @@ export const initialPortfolioData: PortfolioData = {
   home: {
     name: "",
     subtitle: "",
-    description: ""
+    description: "",
+    imageUrl: ""
   },
   about: {
     description: "",
     experienceYears: "",
     completedProjects: "",
     supportAvailability: "",
-    cvUrl: ""
+    cvUrl: "",
+    imageUrl: ""
   },
   skills: {
     frontend: [],
