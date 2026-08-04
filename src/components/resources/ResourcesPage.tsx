@@ -39,6 +39,50 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
     setFilteredResources(filtered);
   }, [searchTerm, selectedCategory, portfolioData.resources]);
 
+  // Helper to find children of active selected category node
+  const getActiveFolderChildren = (): any[] => {
+    if (selectedCategory === "All") {
+      return portfolioData.resourceCategories || [];
+    }
+    
+    const findNode = (nodes: any[], id: string): any => {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        if (node.children && node.children.length > 0) {
+          const match = findNode(node.children, id);
+          if (match) return match;
+        }
+      }
+      return null;
+    };
+
+    const activeNode = findNode(portfolioData.resourceCategories || [], selectedCategory);
+    return activeNode?.children || [];
+  };
+
+  // Helper to build active category breadcrumbs trail
+  const getActiveBreadcrumbs = (): { id: string; name: string }[] => {
+    const trail: { id: string; name: string }[] = [{ id: "All", name: "All Folders" }];
+    if (selectedCategory === "All") return trail;
+
+    const findPath = (nodes: any[], targetId: string, currentPath: { id: string; name: string }[]): boolean => {
+      for (const node of nodes) {
+        const newPath = [...currentPath, { id: node.id, name: node.name }];
+        if (node.id === targetId) {
+          trail.push(...newPath);
+          return true;
+        }
+        if (node.children && node.children.length > 0) {
+          if (findPath(node.children, targetId, newPath)) return true;
+        }
+      }
+      return false;
+    };
+
+    findPath(portfolioData.resourceCategories || [], selectedCategory, []);
+    return trail;
+  };
+
   // Resolves the category path IDs into a clean hierarchy breadcrumb e.g. B.Tech › CS › Books
   const resolveCategoryPathNames = (pathIds: string[]): string => {
     if (!pathIds || pathIds.length === 0) return "General";
@@ -119,36 +163,93 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
 
       {/* Sidebar Grid Layout */}
       <div className="resources-page__layout">
-        {/* Sidebar Folder Accordion */}
-        <aside className="resources-page__sidebar">
-          <h3 className="resources-page__sidebar-title">
-            <i className="uil uil-sitemap" style={{ color: "var(--green-color)" }}></i> Folders Hierarchy
-          </h3>
-          
-          {/* Root Level selector */}
-          <div 
-            className={`resources-page__node-header ${selectedCategory === "All" ? "active" : ""}`}
-            style={{ fontWeight: "600", marginBottom: "0.5rem" }}
-            onClick={() => setSelectedCategory("All")}
-          >
-            <span style={{ display: "flex", alignItems: "center", columnGap: "0.35rem" }}>
-              <i className="uil uil-apps"></i> All Categories
-            </span>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            {(portfolioData.resourceCategories || []).length > 0 ? (
-              (portfolioData.resourceCategories || []).map((cat) => renderSidebarTreeNode(cat))
-            ) : (
-              <span style={{ fontSize: "0.8rem", color: "var(--text-color-light)", fontStyle: "italic" }}>
-                No categories configured.
+        {/* Sidebar Folder Accordion (Desktop only) */}
+        <div className="resources-page__desktop-sidebar">
+          <aside className="resources-page__sidebar">
+            <h3 className="resources-page__sidebar-title">
+              <i className="uil uil-sitemap" style={{ color: "var(--green-color)" }}></i> Folders Hierarchy
+            </h3>
+            
+            {/* Root Level selector */}
+            <div 
+              className={`resources-page__node-header ${selectedCategory === "All" ? "active" : ""}`}
+              style={{ fontWeight: "600", marginBottom: "0.5rem" }}
+              onClick={() => setSelectedCategory("All")}
+            >
+              <span style={{ display: "flex", alignItems: "center", columnGap: "0.35rem" }}>
+                <i className="uil uil-apps"></i> All Categories
               </span>
-            )}
-          </div>
-        </aside>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              {(portfolioData.resourceCategories || []).length > 0 ? (
+                (portfolioData.resourceCategories || []).map((cat) => renderSidebarTreeNode(cat))
+              ) : (
+                <span style={{ fontSize: "0.8rem", color: "var(--text-color-light)", fontStyle: "italic" }}>
+                  No categories configured.
+                </span>
+              )}
+            </div>
+          </aside>
+        </div>
 
         {/* Catalog Grid View */}
         <main>
+          {/* Mobile Folder Explorer (Mobile only) */}
+          <div className="resources-page__mobile-explorer">
+            {/* Mobile Breadcrumb explorer */}
+            <div className="resources-page__mobile-breadcrumbs" style={{ display: "flex", alignItems: "center", gap: "0.25rem", flexWrap: "wrap", marginBottom: "1rem", fontSize: "0.85rem" }}>
+              {getActiveBreadcrumbs().map((b, idx) => (
+                <React.Fragment key={b.id}>
+                  {idx > 0 && <i className="uil uil-angle-right" style={{ color: "var(--text-color-light)", fontSize: "0.95rem" }}></i>}
+                  <span 
+                    style={{ 
+                      color: idx === getActiveBreadcrumbs().length - 1 ? "var(--green-color)" : "var(--title-color)", 
+                      fontWeight: idx === getActiveBreadcrumbs().length - 1 ? "600" : "500",
+                      cursor: "pointer"
+                    }}
+                    onClick={() => setSelectedCategory(b.id)}
+                  >
+                    {b.name}
+                  </span>
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Horizontal scroll list of child categories */}
+            {getActiveFolderChildren().length > 0 ? (
+              <div className="resources-page__mobile-pills" style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.75rem", marginBottom: "1.5rem", WebkitOverflowScrolling: "touch" }}>
+                {getActiveFolderChildren().map((child) => (
+                  <button
+                    key={child.id}
+                    type="button"
+                    style={{
+                      padding: "0.5rem 1rem",
+                      borderRadius: "2rem",
+                      border: "1px solid rgba(100, 116, 139, 0.15)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      fontSize: "0.8rem",
+                      whiteSpace: "nowrap",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      columnGap: "0.35rem",
+                      cursor: "pointer",
+                      transition: "0.2s"
+                    }}
+                    onClick={() => setSelectedCategory(child.id)}
+                  >
+                    <i className={child.children && child.children.length > 0 ? "uil uil-folder" : "uil uil-file-alt"} style={{ color: "var(--green-color)" }}></i>
+                    {child.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: "0.75rem", color: "var(--text-color-light)", display: "block", marginBottom: "1.5rem", fontStyle: "italic" }}>
+                📂 Deepest directory level.
+              </span>
+            )}
+          </div>
           {isLoading ? (
             <div className="resources__grid">
               {[...Array(4)].map((_, i) => (

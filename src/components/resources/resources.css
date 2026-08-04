@@ -267,3 +267,30 @@
 .resources__card-btn:hover {
   background-color: #019a53;
 }
+
+/* Responsive visibility rules */
+.resources-page__desktop-sidebar {
+  display: block;
+}
+
+.resources-page__mobile-explorer {
+  display: none;
+}
+
+.resources-page__mobile-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.resources-page__mobile-pills {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media screen and (max-width: 768px) {
+  .resources-page__desktop-sidebar {
+    display: none;
+  }
+  .resources-page__mobile-explorer {
+    display: block;
+  }
+}

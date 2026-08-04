@@ -43,7 +43,7 @@ const Header: React.FC = ()=>{
               alignItems: "center",
               justifyContent: "space-between",
             }}
-            href="index.html"
+            href="/"
             rel="noopener noreferrer"
           >
             <img
@@ -55,110 +55,133 @@ const Header: React.FC = ()=>{
           </a>
           <div className={Toggle ? "nav__menu show-menu" : "nav__menu"}>
             <ul className="nav__list">
-              <li className="nav__item">
-                <a
-                  href="#home"
-                  onClick={(e) => handleNavClick(e, "#home")}
-                  className={
-                    activeNav === "#home"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-estate nav__icon active-link"></i>Home
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#about"
-                  onClick={(e) => handleNavClick(e, "#about")}
-                  className={
-                    activeNav === "#about"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-user nav__icon"></i>About Me
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#terminal"
-                  onClick={(e) => handleNavClick(e, "#terminal")}
-                  className={
-                    activeNav === "#terminal"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-terminal nav__icon"></i>Console
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#skills"
-                  onClick={(e) => handleNavClick(e, "#skills")}
-                  className={
-                    activeNav === "#skills"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-file-alt nav__icon"></i>Skills
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#services"
-                  onClick={(e) => handleNavClick(e, "#services")}
-                  className={
-                    activeNav === "#services"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-briefcase-alt nav__icon"></i>Services
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#portfolio"
-                  onClick={(e) => handleNavClick(e, "#portfolio")}
-                  className={
-                    activeNav === "#portfolio"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-scenery nav__icon"></i>Portfolio
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#blogs"
-                  onClick={(e) => handleNavClick(e, "#blogs")}
-                  className={
-                    activeNav === "#blogs"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-book-reader nav__icon"></i>Blogs
-                </a>
-              </li>
-              <li className="nav__item">
-                <a
-                  href="#contact"
-                  onClick={(e) => handleNavClick(e, "#contact")}
-                  className={
-                    activeNav === "#contact"
-                      ? "nav__link active-link"
-                      : "nav__link"
-                  }
-                >
-                  <i className="uil uil-message nav__icon"></i>Contact
-                </a>
-              </li>
+              {window.location.pathname === "/" ? (
+                <>
+                  <li className="nav__item">
+                    <a
+                      href="#home"
+                      onClick={(e) => handleNavClick(e, "#home")}
+                      className={activeNav === "#home" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-estate nav__icon active-link"></i>Home
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#about"
+                      onClick={(e) => handleNavClick(e, "#about")}
+                      className={activeNav === "#about" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-user nav__icon"></i>About Me
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#terminal"
+                      onClick={(e) => handleNavClick(e, "#terminal")}
+                      className={activeNav === "#terminal" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-terminal nav__icon"></i>Console
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#skills"
+                      onClick={(e) => handleNavClick(e, "#skills")}
+                      className={activeNav === "#skills" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-file-alt nav__icon"></i>Skills
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#services"
+                      onClick={(e) => handleNavClick(e, "#services")}
+                      className={activeNav === "#services" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-briefcase-alt nav__icon"></i>Services
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#portfolio"
+                      onClick={(e) => handleNavClick(e, "#portfolio")}
+                      className={activeNav === "#portfolio" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-scenery nav__icon"></i>Portfolio
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#blogs"
+                      onClick={(e) => handleNavClick(e, "#blogs")}
+                      className={activeNav === "#blogs" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-book-reader nav__icon"></i>Blogs
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="#contact"
+                      onClick={(e) => handleNavClick(e, "#contact")}
+                      className={activeNav === "#contact" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-message nav__icon"></i>Contact
+                    </a>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="nav__item">
+                    <a
+                      href="/"
+                      className="nav__link"
+                    >
+                      <i className="uil uil-estate nav__icon"></i>Home
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="/memories"
+                      className={window.location.pathname === "/memories" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-history nav__icon"></i>Memories
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="/projects"
+                      className={window.location.pathname === "/projects" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-briefcase nav__icon"></i>Projects
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="/resources"
+                      className={window.location.pathname === "/resources" ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-book-open nav__icon"></i>Resources
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="/blogs"
+                      className={(window.location.pathname === "/blogs" || window.location.pathname.startsWith("/blog/")) ? "nav__link active-link" : "nav__link"}
+                    >
+                      <i className="uil uil-book-reader nav__icon"></i>Blogs
+                    </a>
+                  </li>
+                  <li className="nav__item">
+                    <a
+                      href="/#contact"
+                      className="nav__link"
+                    >
+                      <i className="uil uil-message nav__icon"></i>Contact
+                    </a>
+                  </li>
+                </>
+              )}
             </ul>
             <i
               className="uil uil-times nav__close"
