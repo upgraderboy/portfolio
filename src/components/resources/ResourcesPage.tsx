@@ -265,37 +265,57 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
               ))}
             </div>
           ) : filteredResources.length > 0 ? (
-            <div className="resources__grid">
+            <div className="resources__grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "1.5rem" }}>
               {filteredResources.map((res) => (
-                <div className="resources__card" key={res.id}>
-                  {res.thumbnailUrl ? (
-                    <div className="resources__card-cover" style={{ width: "90px", height: "125px", borderRadius: "0.5rem", overflow: "hidden", border: "1px solid rgba(100, 116, 139, 0.15)", flexShrink: 0 }}>
-                      <img src={res.thumbnailUrl} alt={res.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div className="resources__book-card" key={res.id}>
+                  {/* The 3D Physical Book Graphic */}
+                  <div className="resources__book-wrapper">
+                    <div className="resources__book">
+                      {/* Front Cover */}
+                      <div className="resources__book-cover">
+                        {res.thumbnailUrl ? (
+                          <img src={res.thumbnailUrl} alt={res.title} className="resources__book-img" />
+                        ) : (
+                          <div className="resources__book-fallback" style={{ padding: "0.75rem", textAlign: "center", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                            <i className="uil uil-file-pdf" style={{ fontSize: "2rem", color: "var(--green-color)" }}></i>
+                            <span style={{ fontSize: "0.65rem", fontWeight: "700", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", textTransform: "uppercase", color: "var(--title-color)", marginTop: "0.25rem", wordBreak: "break-word", lineHeight: "1.2" }}>
+                              {res.title}
+                            </span>
+                          </div>
+                        )}
+                        {/* Glossy Overlay */}
+                        <div className="resources__book-overlay"></div>
+                      </div>
+                      {/* Spine */}
+                      <div className="resources__book-spine"></div>
                     </div>
-                  ) : (
-                    <div className="resources__card-icon">
-                      <i className="uil uil-file-pdf"></i>
-                    </div>
-                  )}
-                  <div className="resources__card-info">
+                  </div>
+
+                  {/* Metadata and Actions */}
+                  <div className="resources__book-details">
                     <span className="resources__card-category" title={resolveCategoryPathNames(res.categoryPath)}>
                       {resolveCategoryPathNames(res.categoryPath)}
                     </span>
-                    <h3 className="resources__card-title">{res.title}</h3>
-                    <p className="resources__card-description">{res.description}</p>
+                    <h3 className="resources__card-title" style={{ margin: "0.25rem 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "600", color: "var(--title-color)" }}>
+                      {res.title}
+                    </h3>
+                    <p className="resources__card-description" style={{ margin: "0 0 0.75rem 0", fontSize: "var(--small-font-size)", color: "var(--text-color)" }}>
+                      {res.description}
+                    </p>
                     
                     {res.source && (
-                      <span className="resources__card-source">
+                      <span className="resources__card-source" style={{ fontSize: "0.75rem", color: "var(--text-color-light)", display: "inline-flex", alignItems: "center", columnGap: "0.25rem", marginBottom: "0.5rem" }}>
                         <i className="uil uil-user"></i> Source: {res.source}
                       </span>
                     )}
                     
                     {res.tags && res.tags.length > 0 && (
-                      <div className="resources__card-tags">
+                      <div className="resources__card-tags" style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem", marginBottom: "1rem" }}>
                         {res.tags.map((tag: string, idx: number) => (
                           <span
                             key={idx}
                             className="resources__card-tag"
+                            style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem" }}
                             onClick={() => setSearchTerm(tag)}
                           >
                             #{tag}
@@ -304,13 +324,45 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
                       </div>
                     )}
 
-                    <button
-                      className="resources__card-btn button button--flex"
-                      onClick={() => window.location.href = `/flipbook/index.html?file=${encodeURIComponent(res.id)}`}
-                    >
-                      Read Document
-                      <i className="uil uil-book-open button__icon" style={{ marginLeft: "0.5rem" }}></i>
-                    </button>
+                    {/* Action buttons matching specifications */}
+                    <div className="resources__book-actions">
+                      <button
+                        className="resources__card-btn button"
+                        style={{ flexGrow: 1, padding: "0.6rem 1rem", fontSize: "0.8rem", display: "inline-flex", justifyContent: "center", alignItems: "center" }}
+                        onClick={() => window.location.href = `/flipbook/index.html?file=${encodeURIComponent(res.id)}`}
+                      >
+                        Read
+                        <i className="uil uil-book-open" style={{ marginLeft: "0.4rem" }}></i>
+                      </button>
+
+                      <button
+                        className="button button--secondary"
+                        style={{ 
+                          padding: "0.6rem 0.8rem", 
+                          fontSize: "0.8rem", 
+                          borderRadius: "0.5rem",
+                          display: "inline-flex", 
+                          alignItems: "center", 
+                          justifyContent: "center",
+                          backgroundColor: "transparent",
+                          border: "1px solid var(--green-color)",
+                          color: "var(--green-color)",
+                          cursor: "pointer"
+                        }}
+                        onClick={() => {
+                          const a = document.createElement("a");
+                          a.href = res.pdfUrl;
+                          a.target = "_blank";
+                          a.download = res.title + ".pdf";
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                        title="Download PDF"
+                      >
+                        <i className="uil uil-import"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
