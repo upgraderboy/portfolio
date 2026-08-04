@@ -27,6 +27,20 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     updateBlogs,
   } = usePortfolioData();
 
+  // Theme State
+  const [themeMode, setThemeMode] = useState(localStorage.getItem("mode") || "light");
+
+  useEffect(() => {
+    document.querySelector("body")?.setAttribute("data-theme", themeMode);
+  }, [themeMode]);
+
+  const toggleTheme = () => {
+    const nextTheme = themeMode === "dark" ? "light" : "dark";
+    document.querySelector("body")?.setAttribute("data-theme", nextTheme);
+    localStorage.setItem("mode", nextTheme);
+    setThemeMode(nextTheme);
+  };
+
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passwordInput, setPasswordInput] = useState<string>("");
@@ -720,8 +734,17 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     <div className="admin__layout">
       {/* Sidebar Navigation */}
       <div className="admin__sidebar">
-        <div className="admin__sidebar-header">
+        <div className="admin__sidebar-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span className="admin__sidebar-title">Admin Control Panel</span>
+          <button 
+            type="button" 
+            onClick={toggleTheme}
+            className="admin__action-btn"
+            style={{ color: "var(--title-color)", display: "flex", alignItems: "center", cursor: "pointer", transition: "color 0.3s ease" }}
+            title={themeMode === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            <i className={`uil ${themeMode === "dark" ? "uil-sun" : "uil-moon"}`} style={{ fontSize: "1.25rem" }}></i>
+          </button>
         </div>
 
         <div className="admin__nav">
@@ -763,13 +786,15 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
           </div>
         </div>
 
-        <button className="admin__btn admin__btn--secondary" onClick={() => navigate("/")} style={{ marginBottom: "0.5rem" }}>
-          <i className="uil uil-arrow-left"></i> View Portfolio
-        </button>
+        <div className="admin__sidebar-footer">
+          <button className="admin__btn admin__btn--secondary" onClick={() => navigate("/")}>
+            <i className="uil uil-arrow-left"></i> View Portfolio
+          </button>
 
-        <button className="admin__logout-btn" onClick={handleLogout}>
-          <i className="uil uil-sign-out-alt"></i> Log Out
-        </button>
+          <button className="admin__logout-btn" onClick={handleLogout}>
+            <i className="uil uil-sign-out-alt"></i> Log Out
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}

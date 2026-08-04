@@ -40,6 +40,7 @@ const GlobalStyle = createGlobalStyle`
   --title-color: hsl(0, var(--sat), 20%);
   --title-color-dark: hsl(0, var(--sat), 0%);
   --btn-color: #00ff1e;
+  --green-color: #01C369;
   --border-color: #71737a;
   --text-color: hsl(0, var(--sat), 46%);
   --body-color: hsl(0, var(--sat), 98%);

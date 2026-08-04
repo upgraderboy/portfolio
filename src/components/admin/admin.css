@@ -50,7 +50,7 @@
 
 .admin__login-btn {
   background-color: var(--green-color);
-  color: var(--body-color);
+  color: #fff;
   padding: 0.75rem;
   border-radius: 0.5rem;
   width: 100%;
@@ -154,6 +154,20 @@
   background-color: rgba(255, 77, 77, 0.1);
 }
 
+.admin__sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5rem;
+  margin-top: auto;
+  width: 100%;
+}
+
+.admin__sidebar-footer .admin__btn,
+.admin__sidebar-footer .admin__logout-btn {
+  width: 100%;
+  margin: 0;
+}
+
 /* Admin Content Panel */
 .admin__content {
   padding: 2.5rem;
@@ -201,7 +215,7 @@
 
 .admin__btn--primary {
   background-color: var(--green-color);
-  color: var(--body-color);
+  color: #fff;
 }
 
 .admin__btn--primary:hover {
@@ -290,7 +304,7 @@
   background-color: var(--card-color);
   border: 1px solid var(--border-color);
   border-radius: 1rem;
-  overflow: hidden;
+  overflow-x: auto;
   margin-top: 1.5rem;
 }
 
@@ -424,6 +438,9 @@
     border-right: none;
     border-bottom: 1px solid var(--border-color);
     padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    row-gap: 1.25rem;
   }
 
   .admin__nav {
@@ -431,14 +448,24 @@
     column-gap: 0.5rem;
     overflow-x: auto;
     padding-bottom: 0.5rem;
+    width: 100%;
   }
 
   .admin__nav-item {
     white-space: nowrap;
   }
 
-  .admin__logout-btn {
-    margin-top: 1rem;
+  .admin__sidebar-footer {
+    flex-direction: row;
+    column-gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .admin__sidebar-footer .admin__btn,
+  .admin__sidebar-footer .admin__logout-btn {
+    flex: 1;
+    margin: 0 !important;
+    justify-content: center;
   }
 
   .admin__content {
