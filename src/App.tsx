@@ -19,7 +19,7 @@ import BlogsPage from "./components/blogs/BlogsPage.tsx";
 import BlogPostPage from "./components/blogs/BlogPostPage.tsx";
 import ProjectsPage from "./components/portfolio/ProjectsPage.tsx";
 import MemoriesPage from "./components/memories/MemoriesPage.tsx";
-import { PortfolioProvider, usePortfolioData } from "./components/db/PortfolioContext.tsx";
+import { PortfolioProvider } from "./components/db/PortfolioContext.tsx";
 
 interface PortfolioContentProps {
   navigate: (to: string) => void;
@@ -47,7 +47,6 @@ const PortfolioContent: React.FC<PortfolioContentProps> = ({ navigate }) => {
 
 const AppContent: React.FC = () => {
   const [route, setRoute] = useState(window.location.pathname);
-  const { isLoading } = usePortfolioData();
 
   useEffect(() => {
     const handlePopState = () => {
@@ -61,17 +60,6 @@ const AppContent: React.FC = () => {
     window.history.pushState({}, "", to);
     setRoute(to);
   };
-
-  if (isLoading) {
-    return (
-      <div className="portfolio-loader-container">
-        <div className="portfolio-loader">
-          <div className="portfolio-loader-circle"></div>
-          <div className="portfolio-loader-text">Loading dynamic portfolio content...</div>
-        </div>
-      </div>
-    );
-  }
 
   const renderContent = () => {
     if (route === "/admin") {
