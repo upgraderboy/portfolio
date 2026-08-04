@@ -2664,6 +2664,103 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
               </div>
             </div>
 
+            {/* Google Search Real-time Preview */}
+            <div className="admin__form-card" style={{ marginBottom: "2rem" }}>
+              <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "0.5rem" }}>
+                <i className="uil uil-eye"></i> Google Search Snippet Preview
+              </h3>
+              <span className="admin__content-subtitle" style={{ marginBottom: "1.5rem", display: "block" }}>
+                This is a live simulation of how your portfolio site appears in Google search engine result pages (SERPs)
+              </span>
+
+              <div className="google-preview-card" style={{
+                backgroundColor: "#fff",
+                color: "#4d5156",
+                fontFamily: "arial, sans-serif",
+                padding: "1.5rem",
+                borderRadius: "0.75rem",
+                border: "1px solid #dadce0",
+                boxShadow: "0 1px 6px rgba(32,33,36,0.28)",
+                maxWidth: "600px",
+                textAlign: "left"
+              }}>
+                {/* Google Header */}
+                <div style={{ display: "flex", alignItems: "center", marginBottom: "0.25rem" }}>
+                  <div style={{
+                    backgroundColor: "#f1f3f4",
+                    borderRadius: "50%",
+                    width: "28px",
+                    height: "28px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: "0.5rem"
+                  }}>
+                    <i className="uil uil-globe" style={{ color: "#5f6368", fontSize: "1rem" }}></i>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "0.85rem", color: "#202124", lineHeight: "1.2", fontWeight: "400" }}>{seoSiteTitle || "Upgrader Boy"}</span>
+                    <span style={{ fontSize: "0.75rem", color: "#5f6368", lineHeight: "1.2" }}>https://upgraderboy.tech</span>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 style={{
+                  color: "#1a0dab",
+                  fontSize: "1.25rem",
+                  fontWeight: "400",
+                  lineHeight: "1.3",
+                  margin: "0.25rem 0 0.5rem 0",
+                  textDecoration: "none"
+                }}>
+                  {seoSiteTitle || "Upgrader Boy"} - Portfolio, Blogs, Projects
+                </h3>
+
+                {/* Description */}
+                <p style={{
+                  fontSize: "0.875rem",
+                  color: "#4d5156",
+                  lineHeight: "1.58",
+                  margin: "0 0 1rem 0",
+                  wordWrap: "break-word"
+                }}>
+                  {seoSiteDescription || "Tech. That Makes Trends"}
+                </p>
+
+                {/* Sitelinks 2x2 Grid */}
+                {seoRoutes.length > 0 && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, 1fr)",
+                    gap: "1rem",
+                    marginTop: "1rem",
+                    paddingTop: "0.75rem",
+                    borderTop: "1px solid #ebebeb"
+                  }}>
+                    {seoRoutes.map((r) => (
+                      <div key={r.id} style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                        <h4 style={{
+                          color: "#1a0dab",
+                          fontSize: "0.95rem",
+                          fontWeight: "400",
+                          margin: "0 0 0.25rem 0"
+                        }}>
+                          {r.title}
+                        </h4>
+                        <span style={{
+                          fontSize: "0.75rem",
+                          color: "#4d5156",
+                          lineHeight: "1.4"
+                        }}>
+                          {r.description}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Main Meta Settings Form */}
             <form onSubmit={handleSaveSeo} className="admin__form-card">
               <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1.5rem" }}>Main Metadata</h3>
