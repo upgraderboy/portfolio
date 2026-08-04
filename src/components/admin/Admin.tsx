@@ -86,15 +86,13 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [resTitle, setResTitle] = useState("");
   const [resDescription, setResDescription] = useState("");
   const [resPdfUrl, setResPdfUrl] = useState("");
-  const [resCategory, setResCategory] = useState("");
-  const [resSubcategory, setResSubcategory] = useState("");
+  const [resCategoryPath, setResCategoryPath] = useState<string[]>([]);
   const [resTags, setResTags] = useState("");
   const [resSource, setResSource] = useState("");
 
   // Category Configuration state
   const [newCategoryName, setNewCategoryName] = useState("");
   const [selectedParentCategory, setSelectedParentCategory] = useState("");
-  const [newSubcategoryName, setNewSubcategoryName] = useState("");
 
 
 
@@ -470,16 +468,67 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setResTitle("");
     setResDescription("");
     setResPdfUrl("");
-    setResCategory("");
-    setResSubcategory("");
+    setResCategoryPath([]);
     setResTags("");
     setResSource("");
+  };
+
+  // Recursive Tree helpers
+  const addChildToNode = (nodes: any[], targetId: string, newNode: any): any[] => {
+    return nodes.map((node) => {
+      if (node.id === targetId) {
+        return {
+          ...node,
+          children: [...(node.children || []), newNode],
+        };
+      }
+      if (node.children && node.children.length > 0) {
+        return {
+          ...node,
+          children: addChildToNode(node.children, targetId, newNode),
+        };
+      }
+      return node;
+    });
+  };
+
+  const removeNodeFromTree = (nodes: any[], targetId: string): any[] => {
+    return nodes
+      .filter((node) => node.id !== targetId)
+      .map((node) => {
+        if (node.children && node.children.length > 0) {
+          return {
+            ...node,
+            children: removeNodeFromTree(node.children, targetId),
+          };
+        }
+        return node;
+      });
+  };
+
+  const checkCategoryNameExists = (nodes: any[], name: string): boolean => {
+    for (const node of nodes) {
+      if (node.name.toLowerCase() === name.toLowerCase()) {
+        return true;
+      }
+      if (node.children && node.children.length > 0) {
+        if (checkCategoryNameExists(node.children, name)) {
+          return true;
+        }
+      }
+    }
+    return false;
   };
 
   const handleAddResource = (e: React.FormEvent) => {
     e.preventDefault();
     const resList = portfolioData.resources || [];
     const parsedTags = resTags.split(",").map((t) => t.trim()).filter((t) => t !== "");
+
+    if (resCategoryPath.length === 0) {
+      alert("Please select at least a root category for this resource.");
+      return;
+    }
 
     if (editingId) {
       const updated = resList.map((r) => {
@@ -489,8 +538,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
             title: resTitle,
             description: resDescription,
             pdfUrl: resPdfUrl,
-            category: resCategory,
-            subcategory: resSubcategory || undefined,
+            categoryPath: resCategoryPath,
             tags: parsedTags,
             source: resSource || undefined,
           };
@@ -506,8 +554,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
         title: resTitle,
         description: resDescription,
         pdfUrl: resPdfUrl,
-        category: resCategory,
-        subcategory: resSubcategory || undefined,
+        categoryPath: resCategoryPath,
         tags: parsedTags,
         source: resSource || undefined,
         dateAdded: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
@@ -531,8 +578,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setResTitle(r.title);
     setResDescription(r.description);
     setResPdfUrl(r.pdfUrl);
-    setResCategory(r.category);
-    setResSubcategory(r.subcategory || "");
+    setResCategoryPath(r.categoryPath || []);
     setResTags(r.tags.join(", "));
     setResSource(r.source || "");
   };
@@ -540,76 +586,41 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
     const categories = portfolioData.resourceCategories || [];
-    if (!newCategoryName.trim()) return;
+    const nameTrim = newCategoryName.trim();
+    if (!nameTrim) return;
 
-    if (categories.some((c) => c.name.toLowerCase() === newCategoryName.trim().toLowerCase())) {
-      alert("Category already exists.");
+    if (checkCategoryNameExists(categories, nameTrim)) {
+      alert(`Category "${nameTrim}" already exists in the hierarchy.`);
       return;
     }
 
     const newCat = {
       id: "cat-" + Date.now(),
-      name: newCategoryName.trim(),
-      subcategories: [],
+      name: nameTrim,
+      children: [],
     };
-    updateResourceCategories([...categories, newCat]);
+
+    if (selectedParentCategory) {
+      const updated = addChildToNode(categories, selectedParentCategory, newCat);
+      updateResourceCategories(updated);
+      alert(`Subcategory "${nameTrim}" added successfully!`);
+    } else {
+      updateResourceCategories([...categories, newCat]);
+      alert(`Root Category "${nameTrim}" added successfully!`);
+    }
+
     setNewCategoryName("");
-    alert("Category created successfully!");
   };
 
   const handleDeleteCategory = (catId: string) => {
-    if (window.confirm("Are you sure you want to delete this category? All subcategories will be removed.")) {
+    if (window.confirm("Are you sure you want to delete this category? All its nested subcategories will be removed recursively.")) {
       const categories = portfolioData.resourceCategories || [];
-      updateResourceCategories(categories.filter((c) => c.id !== catId));
-      if (selectedParentCategory === catId) {
-         setSelectedParentCategory("");
-      }
-      alert("Category deleted successfully!");
-    }
-  };
-
-  const handleAddSubcategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedParentCategory) {
-      alert("Please select a parent category first.");
-      return;
-    }
-    if (!newSubcategoryName.trim()) return;
-
-    const categories = portfolioData.resourceCategories || [];
-    const updated = categories.map((c) => {
-      if (c.id === selectedParentCategory) {
-        if (c.subcategories.some((sub) => sub.toLowerCase() === newSubcategoryName.trim().toLowerCase())) {
-          alert("Subcategory already exists under this parent category.");
-          return c;
-        }
-        return {
-          ...c,
-          subcategories: [...c.subcategories, newSubcategoryName.trim()],
-        };
-      }
-      return c;
-    });
-
-    updateResourceCategories(updated);
-    setNewSubcategoryName("");
-    alert("Subcategory added successfully!");
-  };
-
-  const handleDeleteSubcategory = (catId: string, subName: string) => {
-    if (window.confirm(`Are you sure you want to delete subcategory "${subName}"?`)) {
-      const categories = portfolioData.resourceCategories || [];
-      const updated = categories.map((c) => {
-        if (c.id === catId) {
-          return {
-            ...c,
-            subcategories: c.subcategories.filter((sub) => sub !== subName),
-          };
-        }
-        return c;
-      });
+      const updated = removeNodeFromTree(categories, catId);
       updateResourceCategories(updated);
-      alert("Subcategory deleted successfully!");
+      if (selectedParentCategory === catId) {
+        setSelectedParentCategory("");
+      }
+      alert("Category tree node deleted successfully!");
     }
   };
 
@@ -1000,6 +1011,92 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
       </div>
     );
   }
+
+  // Category Tree UI Rendering Helper
+  const renderCategoryTreeNode = (node: any, depth = 0): React.ReactNode => {
+    const hasChildren = node.children && node.children.length > 0;
+    const isSelected = selectedParentCategory === node.id;
+    
+    return (
+      <div 
+        key={node.id} 
+        style={{ 
+          marginLeft: depth > 0 ? "1.25rem" : "0", 
+          marginTop: "0.5rem",
+          borderLeft: depth > 0 ? "1px dashed rgba(100, 116, 139, 0.3)" : "none",
+          paddingLeft: depth > 0 ? "0.75rem" : "0"
+        }}
+      >
+        <div 
+          style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between", 
+            padding: "0.5rem 0.75rem", 
+            borderRadius: "0.35rem",
+            backgroundColor: isSelected ? "rgba(1, 195, 105, 0.12)" : "var(--container-color)",
+            border: isSelected ? "1px solid var(--green-color)" : "1px solid rgba(100, 116, 139, 0.1)",
+            cursor: "pointer"
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedParentCategory(isSelected ? "" : node.id);
+          }}
+        >
+          <span style={{ 
+            fontWeight: depth === 0 ? "600" : "500", 
+            fontSize: depth === 0 ? "0.9rem" : "0.8rem",
+            color: isSelected ? "var(--green-color)" : "var(--title-color)",
+            display: "flex",
+            alignItems: "center",
+            columnGap: "0.35rem"
+          }}>
+            <i className={hasChildren ? "uil uil-folder" : "uil uil-file-alt"} style={{ color: isSelected ? "var(--green-color)" : "var(--text-color-light)" }}></i>
+            {node.name}
+          </span>
+          <div style={{ display: "flex", columnGap: "0.25rem" }} onClick={(e) => e.stopPropagation()}>
+            <button 
+              type="button" 
+              className="admin__action-btn admin__action-btn--edit" 
+              onClick={() => setSelectedParentCategory(node.id)}
+              title="Select to add subcategory"
+              style={{ padding: "0.25rem" }}
+            >
+              <i className="uil uil-plus"></i>
+            </button>
+            <button 
+              type="button" 
+              className="admin__action-btn admin__action-btn--delete" 
+              onClick={() => handleDeleteCategory(node.id)}
+              title="Delete Category node"
+              style={{ padding: "0.25rem" }}
+            >
+              <i className="uil uil-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        {hasChildren && node.children!.map((child: any) => renderCategoryTreeNode(child, depth + 1))}
+      </div>
+    );
+  };
+
+  // Category Path string representation builder
+  const resolveCategoryPathNames = (pathIds: string[]): string => {
+    if (!pathIds || pathIds.length === 0) return "None";
+    const names: string[] = [];
+    let currentNodes = portfolioData.resourceCategories || [];
+
+    for (const id of pathIds) {
+      const node: any = currentNodes.find((n: any) => n.id === id);
+      if (node) {
+        names.push(node.name);
+        currentNodes = node.children || [];
+      } else {
+        break;
+      }
+    }
+    return names.join(" › ");
+  };
 
   return (
     <div className="admin__layout">
@@ -3120,138 +3217,80 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
             <div className="admin__content-header">
               <div>
                 <h2 className="admin__content-title">Resources Catalog</h2>
-                <span className="admin__content-subtitle">Manage study resources, books, papers, and dynamic categories</span>
+                <span className="admin__content-subtitle">Manage study resources, books, papers, and dynamic nested categories</span>
               </div>
             </div>
 
-            {/* Part 1: Category & Subcategory Administration */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginBottom: "2rem" }} className="admin__form-grid--two-columns">
-              {/* Category Lists */}
+            {/* Part 1: Category Tree Administration */}
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "2rem", marginBottom: "2rem" }} className="admin__form-grid--two-columns">
+              {/* Category Tree Visualizer */}
               <div className="admin__form-card">
-                <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1.5rem" }}>
-                  <i className="uil uil-folder-open"></i> Categories & Subcategories
+                <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "0.5rem" }}>
+                  <i className="uil uil-folder-open"></i> Hierarchical Category Tree
                 </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <span className="admin__content-subtitle" style={{ display: "block", marginBottom: "1.5rem" }}>
+                  Click a category node to highlight it as the parent folder, or click [+] next to a node to add a subcategory.
+                </span>
+                <div style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: "0.5rem", 
+                  backgroundColor: "rgba(100, 116, 139, 0.03)", 
+                  padding: "1rem", 
+                  borderRadius: "0.5rem",
+                  border: "1px solid rgba(100, 116, 139, 0.15)",
+                  maxHeight: "350px",
+                  overflowY: "auto"
+                }}>
                   {(portfolioData.resourceCategories || []).length > 0 ? (
-                    (portfolioData.resourceCategories || []).map((cat) => (
-                      <div 
-                        key={cat.id} 
-                        style={{ 
-                          padding: "1rem", 
-                          borderRadius: "0.5rem", 
-                          backgroundColor: selectedParentCategory === cat.id ? "rgba(1, 195, 105, 0.1)" : "var(--container-color)", 
-                          border: selectedParentCategory === cat.id ? "1px solid var(--green-color)" : "1px solid rgba(100, 116, 139, 0.15)",
-                          cursor: "pointer"
-                        }}
-                        onClick={() => setSelectedParentCategory(cat.id)}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                          <span style={{ fontWeight: "600", color: "var(--title-color)" }}>{cat.name}</span>
-                          <button 
-                            type="button" 
-                            className="admin__action-btn admin__action-btn--delete" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCategory(cat.id);
-                            }}
-                            title="Delete Category"
-                          >
-                            <i className="uil uil-trash-alt"></i>
-                          </button>
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
-                          {cat.subcategories.length > 0 ? (
-                            cat.subcategories.map((sub, idx) => (
-                              <span 
-                                key={idx} 
-                                className="admin__tag" 
-                                style={{ 
-                                  fontSize: "0.7rem", 
-                                  padding: "0.15rem 0.4rem", 
-                                  backgroundColor: "rgba(100, 116, 139, 0.1)",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  columnGap: "0.2rem"
-                                }}
-                              >
-                                {sub}
-                                <i 
-                                  className="uil uil-times" 
-                                  style={{ cursor: "pointer", color: "var(--text-color-light)" }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteSubcategory(cat.id, sub);
-                                  }}
-                                ></i>
-                              </span>
-                            ))
-                          ) : (
-                            <span style={{ fontSize: "0.75rem", color: "var(--text-color-light)", fontStyle: "italic" }}>No subcategories configured yet.</span>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                    (portfolioData.resourceCategories || []).map((cat) => renderCategoryTreeNode(cat))
                   ) : (
-                    <span style={{ color: "var(--text-color-light)", fontSize: "0.85rem" }}>No categories configured yet. Create one on the right!</span>
+                    <span style={{ color: "var(--text-color-light)", fontSize: "0.85rem", fontStyle: "italic" }}>
+                      No categories configured yet. Create one on the right!
+                    </span>
                   )}
                 </div>
               </div>
 
-              {/* Add Category Forms */}
+              {/* Add / Nest Category Node Form */}
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                {/* Create Parent Category */}
                 <form onSubmit={handleAddCategory} className="admin__form-card">
-                  <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
-                    <i className="uil uil-plus-circle"></i> Create Category
+                  <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "0.5rem" }}>
+                    <i className="uil uil-plus-circle"></i> Add Category Node
                   </h3>
+                  {selectedParentCategory ? (
+                    <span style={{ fontSize: "0.8rem", color: "var(--green-color)", fontWeight: "600", display: "block", marginBottom: "1rem" }}>
+                      Adding subcategory under: {resolveCategoryPathNames([selectedParentCategory])}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-color-light)", display: "block", marginBottom: "1rem" }}>
+                      No node selected. Adding Category at Root level.
+                    </span>
+                  )}
+
                   <div className="admin__form-group" style={{ marginBottom: "1rem" }}>
-                    <label className="admin__form-label">New Category Name *</label>
+                    <label className="admin__form-label">Category Node Name *</label>
                     <input
                       type="text"
                       className="admin__form-input"
-                      placeholder="e.g. Books, Notes, Papers"
+                      placeholder="e.g. AI & ML, Operating Systems"
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       required
                     />
                   </div>
-                  <button type="submit" className="admin__btn admin__btn--primary">Add Category</button>
-                </form>
-
-                {/* Create Subcategory */}
-                <form onSubmit={handleAddSubcategory} className="admin__form-card">
-                  <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
-                    <i className="uil uil-plus-circle"></i> Add Subcategory
-                  </h3>
-                  <div className="admin__form-group" style={{ marginBottom: "1rem" }}>
-                    <label className="admin__form-label">Selected Category</label>
-                    <select
-                      className="admin__form-input"
-                      value={selectedParentCategory}
-                      onChange={(e) => setSelectedParentCategory(e.target.value)}
-                      style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
-                    >
-                      <option value="">-- Choose Category --</option>
-                      {(portfolioData.resourceCategories || []).map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button type="submit" className="admin__btn admin__btn--primary">Add Node</button>
+                    {selectedParentCategory && (
+                      <button 
+                        type="button" 
+                        className="admin__btn admin__btn--secondary" 
+                        onClick={() => setSelectedParentCategory("")}
+                      >
+                        Clear Selection
+                      </button>
+                    )}
                   </div>
-                  <div className="admin__form-group" style={{ marginBottom: "1rem" }}>
-                    <label className="admin__form-label">New Subcategory Name *</label>
-                    <input
-                      type="text"
-                      className="admin__form-input"
-                      placeholder="e.g. DSA, Mathematics, GATE"
-                      value={newSubcategoryName}
-                      onChange={(e) => setNewSubcategoryName(e.target.value)}
-                      disabled={!selectedParentCategory}
-                      required
-                    />
-                  </div>
-                  <button type="submit" className="admin__btn admin__btn--primary" disabled={!selectedParentCategory}>
-                    Add Subcategory
-                  </button>
                 </form>
               </div>
             </div>
@@ -3315,42 +3354,126 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                   </div>
                 </div>
 
-                {/* Category & Subcategory Selectors */}
-                <div className="admin__form-group">
-                  <label className="admin__form-label">Category *</label>
-                  <select
-                    className="admin__form-input"
-                    value={resCategory}
-                    onChange={(e) => {
-                      setResCategory(e.target.value);
-                      setResSubcategory(""); // Reset sub-category on parent category change
-                    }}
-                    style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
-                    required
-                  >
-                    <option value="">-- Select Category --</option>
-                    {(portfolioData.resourceCategories || []).map((cat) => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="admin__form-group">
-                  <label className="admin__form-label">Sub-category (Optional)</label>
-                  <select
-                    className="admin__form-input"
-                    value={resSubcategory}
-                    onChange={(e) => setResSubcategory(e.target.value)}
-                    style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
-                    disabled={!resCategory}
-                  >
-                    <option value="">-- None / General --</option>
-                    {(() => {
-                      const parent = (portfolioData.resourceCategories || []).find((c) => c.name === resCategory);
-                      return parent ? parent.subcategories.map((sub, idx) => (
-                        <option key={idx} value={sub}>{sub}</option>
-                      )) : null;
+                {/* Cascading Category Selectors */}
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Category Path Assignment *</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center" }}>
+                    {/* Selector Level 1 */}
+                    <select
+                      className="admin__form-input"
+                      style={{ minWidth: "150px", flex: 1 }}
+                      value={resCategoryPath[0] || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setResCategoryPath(val ? [val] : []);
+                      }}
+                      required
+                    >
+                      <option value="">-- Choose Root Category --</option>
+                      {(portfolioData.resourceCategories || []).map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+
+                    {/* Selector Level 2 */}
+                    {resCategoryPath.length > 0 && (() => {
+                      const root = (portfolioData.resourceCategories || []).find((c) => c.id === resCategoryPath[0]);
+                      if (root && root.children && root.children.length > 0) {
+                        return (
+                          <>
+                            <i className="uil uil-angle-right" style={{ color: "var(--text-color-light)" }}></i>
+                            <select
+                              className="admin__form-input"
+                              style={{ minWidth: "150px", flex: 1 }}
+                              value={resCategoryPath[1] || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val) {
+                                  setResCategoryPath([resCategoryPath[0], val]);
+                                } else {
+                                  setResCategoryPath([resCategoryPath[0]]);
+                                }
+                              }}
+                            >
+                              <option value="">-- Choose Subcategory (L2) --</option>
+                              {root.children.map((child) => (
+                                <option key={child.id} value={child.id}>{child.name}</option>
+                              ))}
+                            </select>
+                          </>
+                        );
+                      }
+                      return null;
                     })()}
-                  </select>
+
+                    {/* Selector Level 3 */}
+                    {resCategoryPath.length > 1 && (() => {
+                      const root = (portfolioData.resourceCategories || []).find((c) => c.id === resCategoryPath[0]);
+                      const sub = root?.children?.find((c) => c.id === resCategoryPath[1]);
+                      if (sub && sub.children && sub.children.length > 0) {
+                        return (
+                          <>
+                            <i className="uil uil-angle-right" style={{ color: "var(--text-color-light)" }}></i>
+                            <select
+                              className="admin__form-input"
+                              style={{ minWidth: "150px", flex: 1 }}
+                              value={resCategoryPath[2] || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val) {
+                                  setResCategoryPath([resCategoryPath[0], resCategoryPath[1], val]);
+                                } else {
+                                  setResCategoryPath([resCategoryPath[0], resCategoryPath[1]]);
+                                }
+                              }}
+                            >
+                              <option value="">-- Choose Subcategory (L3) --</option>
+                              {sub.children.map((child) => (
+                                <option key={child.id} value={child.id}>{child.name}</option>
+                              ))}
+                            </select>
+                          </>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Selector Level 4 */}
+                    {resCategoryPath.length > 2 && (() => {
+                      const root = (portfolioData.resourceCategories || []).find((c) => c.id === resCategoryPath[0]);
+                      const sub = root?.children?.find((c) => c.id === resCategoryPath[1]);
+                      const subSub = sub?.children?.find((c) => c.id === resCategoryPath[2]);
+                      if (subSub && subSub.children && subSub.children.length > 0) {
+                        return (
+                          <>
+                            <i className="uil uil-angle-right" style={{ color: "var(--text-color-light)" }}></i>
+                            <select
+                              className="admin__form-input"
+                              style={{ minWidth: "150px", flex: 1 }}
+                              value={resCategoryPath[3] || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val) {
+                                  setResCategoryPath([resCategoryPath[0], resCategoryPath[1], resCategoryPath[2], val]);
+                                } else {
+                                  setResCategoryPath([resCategoryPath[0], resCategoryPath[1], resCategoryPath[2]]);
+                                }
+                              }}
+                            >
+                              <option value="">-- Choose Subcategory (L4) --</option>
+                              {subSub.children.map((child) => (
+                                <option key={child.id} value={child.id}>{child.name}</option>
+                              ))}
+                            </select>
+                          </>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <span className="admin__content-subtitle" style={{ marginTop: "0.5rem", display: "block" }}>
+                    Select categories cascadingly. Unselected sub-levels remain general.
+                  </span>
                 </div>
 
                 <div className="admin__form-group admin__form-group--full">
@@ -3395,8 +3518,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                 <thead>
                   <tr>
                     <th>Document Title</th>
-                    <th>Category</th>
-                    <th>Subcategory</th>
+                    <th>Category Path Hierarchy</th>
                     <th>Tags</th>
                     <th>Source</th>
                     <th style={{ width: "120px" }}>Actions</th>
@@ -3410,8 +3532,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                           <span style={{ marginRight: "0.5rem", color: "var(--green-color)" }}><i className="uil uil-file-pdf"></i></span>
                           {r.title}
                         </td>
-                        <td>{r.category}</td>
-                        <td>{r.subcategory || <span style={{ color: "var(--text-color-light)", fontStyle: "italic" }}>None</span>}</td>
+                        <td style={{ fontSize: "0.85rem", fontWeight: "500" }}>{resolveCategoryPathNames(r.categoryPath)}</td>
                         <td>
                           <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
                             {r.tags.map((t, idx) => (
@@ -3444,7 +3565,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>
+                      <td colSpan={5} style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>
                         No catalog resources uploaded yet. Publish your first document above!
                       </td>
                     </tr>

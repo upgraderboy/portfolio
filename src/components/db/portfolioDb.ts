@@ -84,13 +84,13 @@ export interface PortfolioData {
   blogs?: BlogItem[];
   seo?: SeoConfig;
   resources?: ResourceItem[];
-  resourceCategories?: ResourceCategory[];
+  resourceCategories?: ResourceCategoryNode[];
 }
 
-export interface ResourceCategory {
+export interface ResourceCategoryNode {
   id: string;
   name: string;
-  subcategories: string[];
+  children?: ResourceCategoryNode[];
 }
 
 export interface ResourceItem {
@@ -98,8 +98,7 @@ export interface ResourceItem {
   title: string;
   description: string;
   pdfUrl: string;
-  category: string;
-  subcategory?: string;
+  categoryPath: string[]; // Node ID path e.g. ["cat-btech", "cat-cs"]
   tags: string[];
   source?: string;
   dateAdded: string;
@@ -161,8 +160,52 @@ export const initialPortfolioData: PortfolioData = {
   },
   resources: [],
   resourceCategories: [
-    { id: "cat-books", name: "Books", subcategories: ["Computer Science", "Programming", "System Design"] },
-    { id: "cat-notes", name: "Notes", subcategories: ["DSA", "Operating Systems", "Computer Networks"] },
-    { id: "cat-papers", name: "Exam Papers", subcategories: ["GATE", "University Exams"] }
+    {
+      id: "cat-btech",
+      name: "B.Tech",
+      children: [
+        {
+          id: "cat-btech-cs",
+          name: "Computer Science",
+          children: [
+            {
+              id: "cat-btech-cs-books",
+              name: "Books",
+              children: [
+                { id: "cat-btech-cs-books-ai", name: "AI & Machine Learning" },
+                { id: "cat-btech-cs-books-android", name: "Android Development" }
+              ]
+            },
+            {
+              id: "cat-btech-cs-notes",
+              name: "Notes",
+              children: [
+                { id: "cat-btech-cs-notes-dsa", name: "Data Structures" },
+                { id: "cat-btech-cs-notes-networks", name: "Computer Networks" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "cat-gate",
+      name: "GATE Exam",
+      children: [
+        {
+          id: "cat-gate-cs",
+          name: "CS & IT",
+          children: [
+            {
+              id: "cat-gate-cs-papers",
+              name: "Papers",
+              children: [
+                { id: "cat-gate-cs-papers-2024", name: "GATE 2024" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   ]
 };
