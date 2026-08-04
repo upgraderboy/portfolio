@@ -293,13 +293,13 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
 
                   {/* Metadata and Actions */}
                   <div className="resources__book-details">
-                    <span className="resources__card-category" title={resolveCategoryPathNames(res.categoryPath)}>
+                    <span className="resources__card-category" title={resolveCategoryPathNames(res.categoryPath)} style={{ width: "100%", maxWidth: "100%", display: "block" }}>
                       {resolveCategoryPathNames(res.categoryPath)}
                     </span>
-                    <h3 className="resources__card-title" style={{ margin: "0.25rem 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "600", color: "var(--title-color)" }}>
+                    <h3 className="resources__card-title" style={{ margin: "0.25rem 0 0.5rem 0", fontSize: "1.15rem", fontWeight: "600", color: "var(--title-color)", width: "100%", wordBreak: "break-word" }}>
                       {res.title}
                     </h3>
-                    <p className="resources__card-description" style={{ margin: "0 0 0.75rem 0", fontSize: "var(--small-font-size)", color: "var(--text-color)" }}>
+                    <p className="resources__card-description" style={{ margin: "0 0 0.75rem 0", fontSize: "var(--small-font-size)", color: "var(--text-color)", width: "100%", wordBreak: "break-word" }}>
                       {res.description}
                     </p>
                     
