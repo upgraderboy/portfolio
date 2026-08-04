@@ -50,7 +50,9 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
     fetchBlogPostLikesCount,
     addCommentToBlogPost,
     deleteCommentFromBlogPost,
-    fetchBlogPostComments
+    fetchBlogPostComments,
+    updateCommentInBlogPost,
+    replyToCommentInBlogPost
   } = usePortfolioData();
 
   const [blog, setBlog] = useState<any | null>(null);
@@ -65,6 +67,16 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
   const [comments, setComments] = useState<any[]>([]);
   const [newCommentText, setNewCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Edit Comment States
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+  const [submittingCommentEdit, setSubmittingCommentEdit] = useState(false);
+
+  // Reply States
+  const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
+  const [replyCommentText, setReplyCommentText] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
 
   // Scroll Progress Bar Tracker
   useEffect(() => {
@@ -170,6 +182,50 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
       alert("Failed to submit comment to Firestore. This is usually caused by database permission rules blocking writes on 'blogs/" + blogId + "/comments'. Please verify your Firebase Firestore rules.");
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  // Edit Comment Submit
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editingCommentText.trim()) return;
+    setSubmittingCommentEdit(true);
+    try {
+      await updateCommentInBlogPost(blogId, commentId, editingCommentText.trim());
+      setComments(prev => prev.map(c => c.id === commentId ? { ...c, text: editingCommentText.trim(), updatedAt: new Date().toISOString() } : c));
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } catch (err: any) {
+      console.error("Edit comment failed:", err);
+      alert("Failed to save changes. Please check your Firestore rules.");
+    } finally {
+      setSubmittingCommentEdit(false);
+    }
+  };
+
+  // Submit Reply to Comment
+  const handleReplySubmit = async (commentId: string) => {
+    if (!user) {
+      alert("Please login first to reply!");
+      return;
+    }
+    if (!replyCommentText.trim()) return;
+    setSubmittingReply(true);
+    try {
+      const newReply = await replyToCommentInBlogPost(blogId, commentId, replyCommentText.trim(), user);
+      setComments(prev => prev.map(c => {
+        if (c.id === commentId) {
+          const currentReplies = c.replies || [];
+          return { ...c, replies: [...currentReplies, newReply] };
+        }
+        return c;
+      }));
+      setReplyingCommentId(null);
+      setReplyCommentText("");
+    } catch (err: any) {
+      console.error("Submit reply failed:", err);
+      alert("Failed to submit reply. Please check your Firestore rules.");
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
@@ -507,7 +563,19 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
               onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
               title={liked ? "Unlike this article" : "Like this article"}
             >
-              <i className={liked ? "uis uis-heart" : "uil uil-heart"} style={{ fontSize: "1.5rem", color: liked ? "#ef4444" : "inherit" }}></i>
+              <svg 
+                viewBox="0 0 24 24" 
+                width="22" 
+                height="22" 
+                style={{ 
+                  fill: liked ? "#ef4444" : "none", 
+                  stroke: liked ? "#ef4444" : "var(--title-color)", 
+                  strokeWidth: "2",
+                  transition: "all 0.2s ease" 
+                }}
+              >
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
             </button>
             <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--title-color)" }}>
               {likesCount} likes
@@ -723,6 +791,7 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
               {comments.map((comment) => {
                 const isOwnComment = user && user.uid === comment.userId;
                 const isAuthorComment = comment.userName === "Ankit Bhuria" || comment.userId === "mock-google-id" || comment.userId?.includes("mock-google");
+                const isEditing = editingCommentId === comment.id;
                 
                 return (
                   <div 
@@ -744,6 +813,7 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
                     )}
 
                     <div style={{ flexGrow: 1 }}>
+                      {/* Comment Header metadata */}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div style={{ display: "flex", alignItems: "center", columnGap: "0.5rem", flexWrap: "wrap" }}>
                           <span style={{ fontWeight: 600, color: "var(--title-color)", fontSize: "0.9rem" }}>{comment.userName}</span>
@@ -755,29 +825,231 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
                           </span>
                         </div>
 
-                        {isOwnComment && (
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "rgba(239, 68, 68, 0.7)",
-                              cursor: "pointer",
-                              fontSize: "1.1rem",
-                              padding: "0.25rem",
-                              transition: "color 0.2s"
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"}
-                            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(239, 68, 68, 0.7)"}
-                            title="Delete comment"
-                          >
-                            <i className="uil uil-trash-alt"></i>
-                          </button>
-                        )}
+                        {/* Actions buttons */}
+                        <div style={{ display: "flex", alignItems: "center", columnGap: "0.75rem" }}>
+                          {user && (
+                            <button
+                              onClick={() => {
+                                setReplyingCommentId(replyingCommentId === comment.id ? null : comment.id);
+                                setReplyCommentText("");
+                              }}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "var(--text-color-light)",
+                                cursor: "pointer",
+                                fontSize: "0.85rem",
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                columnGap: "0.25rem"
+                              }}
+                            >
+                              <i className="uil uil-comment-share" style={{ fontSize: "1rem" }}></i> Reply
+                            </button>
+                          )}
+
+                          {isOwnComment && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingCommentId(comment.id);
+                                  setEditingCommentText(comment.text);
+                                }}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: "var(--text-color-light)",
+                                  cursor: "pointer",
+                                  fontSize: "0.85rem",
+                                  fontWeight: 600,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  columnGap: "0.25rem"
+                                }}
+                              >
+                                <i className="uil uil-edit" style={{ fontSize: "0.95rem" }}></i> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: "rgba(239, 68, 68, 0.7)",
+                                  cursor: "pointer",
+                                  fontSize: "1.1rem",
+                                  padding: "0.25rem",
+                                  transition: "color 0.2s"
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = "#ef4444"}
+                                onMouseLeave={(e) => e.currentTarget.style.color = "rgba(239, 68, 68, 0.7)"}
+                                title="Delete comment"
+                              >
+                                <i className="uil uil-trash-alt"></i>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <p style={{ margin: "0.35rem 0 0 0", color: "var(--text-color)", fontSize: "0.9rem", lineHeight: "1.6", whiteSpace: "pre-wrap" }}>
-                        {comment.text}
-                      </p>
+
+                      {/* Comment text body (Edit mode vs Read mode) */}
+                      {isEditing ? (
+                        <div style={{ marginTop: "0.5rem" }}>
+                          <textarea
+                            value={editingCommentText}
+                            onChange={(e) => setEditingCommentText(e.target.value)}
+                            rows={3}
+                            style={{
+                              width: "100%",
+                              padding: "0.6rem 0.8rem",
+                              borderRadius: "0.5rem",
+                              border: "1px solid rgba(100, 116, 139, 0.2)",
+                              backgroundColor: "var(--container-color)",
+                              color: "var(--title-color)",
+                              fontSize: "0.9rem",
+                              outline: "none",
+                              resize: "none",
+                              fontFamily: "inherit"
+                            }}
+                          />
+                          <div style={{ display: "flex", columnGap: "0.5rem", marginTop: "0.5rem" }}>
+                            <button
+                              onClick={() => {
+                                setEditingCommentId(null);
+                                setEditingCommentText("");
+                              }}
+                              style={{
+                                padding: "0.4rem 1rem",
+                                borderRadius: "2rem",
+                                border: "1px solid rgba(100, 116, 139, 0.2)",
+                                background: "transparent",
+                                color: "var(--text-color-light)",
+                                cursor: "pointer",
+                                fontSize: "0.75rem"
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleUpdateComment(comment.id)}
+                              disabled={submittingCommentEdit || !editingCommentText.trim()}
+                              style={{
+                                padding: "0.4rem 1rem",
+                                borderRadius: "2rem",
+                                border: "none",
+                                background: "var(--green-color)",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: 600
+                              }}
+                            >
+                              Save Changes
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p style={{ margin: "0.35rem 0 0 0", color: "var(--text-color)", fontSize: "0.9rem", lineHeight: "1.6", whiteSpace: "pre-wrap" }}>
+                          {comment.text}
+                        </p>
+                      )}
+
+                      {/* Nested Replies List */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div style={{ display: "flex", flexDirection: "column", rowGap: "1rem", marginTop: "1rem", paddingLeft: "1.5rem", borderLeft: "2px solid rgba(100, 116, 139, 0.1)" }}>
+                          {comment.replies.map((reply: any) => {
+                            const isAuthorReply = reply.userName === "Ankit Bhuria" || reply.userId === "mock-google-id" || reply.userId?.includes("mock-google");
+                            return (
+                              <div key={reply.id} style={{ display: "flex", columnGap: "0.75rem", alignItems: "start" }}>
+                                {reply.userPhoto ? (
+                                  <img src={reply.userPhoto} alt={reply.userName} style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }} />
+                                ) : (
+                                  <div style={{ width: "28px", height: "28px", borderRadius: "50%", backgroundColor: "var(--first-color)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 700, flexShrink: 0 }}>
+                                    {reply.userName.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <div style={{ flexGrow: 1 }}>
+                                  <div style={{ display: "flex", alignItems: "center", columnGap: "0.5rem", flexWrap: "wrap" }}>
+                                    <span style={{ fontWeight: 600, color: "var(--title-color)", fontSize: "0.85rem" }}>{reply.userName}</span>
+                                    {isAuthorReply && (
+                                      <span style={{ backgroundColor: "rgba(1, 195, 105, 0.1)", color: "var(--green-color)", fontSize: "0.55rem", padding: "0.1rem 0.3rem", borderRadius: "3px", fontWeight: 700, textTransform: "uppercase" }}>Author</span>
+                                    )}
+                                    <span style={{ fontSize: "0.7rem", color: "var(--text-color-light)" }}>
+                                      {new Date(reply.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                                    </span>
+                                  </div>
+                                  <p style={{ margin: "0.2rem 0 0 0", color: "var(--text-color)", fontSize: "0.85rem", lineHeight: "1.5" }}>
+                                    {reply.text}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Reply Form */}
+                      {replyingCommentId === comment.id && (
+                        <div style={{ marginTop: "1rem", paddingLeft: "1.5rem" }}>
+                          <form 
+                            onSubmit={(e) => { e.preventDefault(); handleReplySubmit(comment.id); }} 
+                            style={{ display: "flex", flexDirection: "column", rowGap: "0.5rem" }}
+                          >
+                            <textarea 
+                              value={replyCommentText} 
+                              onChange={(e) => setReplyCommentText(e.target.value)} 
+                              placeholder="Write a reply..."
+                              required
+                              rows={2}
+                              style={{
+                                width: "100%",
+                                padding: "0.6rem 0.85rem",
+                                borderRadius: "0.5rem",
+                                border: "1px solid rgba(100, 116, 139, 0.2)",
+                                backgroundColor: "var(--container-color)",
+                                color: "var(--title-color)",
+                                fontSize: "0.85rem",
+                                outline: "none",
+                                resize: "none",
+                                fontFamily: "inherit"
+                              }}
+                            />
+                            <div style={{ display: "flex", justifyContent: "flex-end", columnGap: "0.5rem" }}>
+                              <button 
+                                type="button" 
+                                onClick={() => setReplyingCommentId(null)}
+                                style={{
+                                  padding: "0.4rem 1rem",
+                                  fontSize: "0.75rem",
+                                  borderRadius: "2rem",
+                                  border: "1px solid rgba(100, 116, 139, 0.2)",
+                                  backgroundColor: "transparent",
+                                  color: "var(--text-color-light)",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                Cancel
+                              </button>
+                              <button 
+                                type="submit" 
+                                disabled={submittingReply || !replyCommentText.trim()}
+                                style={{
+                                  padding: "0.4rem 1rem",
+                                  fontSize: "0.75rem",
+                                  borderRadius: "2rem",
+                                  border: "none",
+                                  backgroundColor: "var(--green-color)",
+                                  color: "#fff",
+                                  cursor: "pointer",
+                                  fontWeight: 600
+                                }}
+                              >
+                                Submit Reply
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

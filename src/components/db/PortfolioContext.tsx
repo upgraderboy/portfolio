@@ -48,6 +48,8 @@ interface PortfolioContextType {
   addCommentToBlogPost: (blogId: string, text: string, user: any) => Promise<any>;
   deleteCommentFromBlogPost: (blogId: string, commentId: string) => Promise<void>;
   fetchBlogPostComments: (blogId: string) => Promise<any[]>;
+  updateCommentInBlogPost: (blogId: string, commentId: string, text: string) => Promise<void>;
+  replyToCommentInBlogPost: (blogId: string, commentId: string, replyText: string, currentUser: any) => Promise<any>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -581,6 +583,49 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const updateCommentInBlogPost = async (blogId: string, commentId: string, text: string) => {
+    if (isFirebaseConfigured && db) {
+      const docRef = doc(db, "blogs", blogId, "comments", commentId);
+      await setDoc(docRef, { text, updatedAt: new Date().toISOString() }, { merge: true });
+    } else {
+      const commentsKey = `mock_comments_${blogId}`;
+      const listStr = localStorage.getItem(commentsKey) || "[]";
+      const list = JSON.parse(listStr);
+      const updated = list.map((c: any) => c.id === commentId ? { ...c, text, updatedAt: new Date().toISOString() } : c);
+      localStorage.setItem(commentsKey, JSON.stringify(updated));
+    }
+  };
+
+  const replyToCommentInBlogPost = async (blogId: string, commentId: string, replyText: string, currentUser: any): Promise<any> => {
+    const newReply = {
+      id: "reply-" + Date.now(),
+      userId: currentUser.uid,
+      userName: currentUser.displayName || currentUser.email?.split("@")[0] || "Anonymous",
+      userPhoto: currentUser.photoURL || null,
+      text: replyText,
+      timestamp: new Date().toISOString()
+    };
+
+    if (isFirebaseConfigured && db) {
+      const { arrayUnion } = await import("firebase/firestore");
+      const docRef = doc(db, "blogs", blogId, "comments", commentId);
+      await setDoc(docRef, { replies: arrayUnion(newReply) }, { merge: true });
+    } else {
+      const commentsKey = `mock_comments_${blogId}`;
+      const listStr = localStorage.getItem(commentsKey) || "[]";
+      const list = JSON.parse(listStr);
+      const updated = list.map((c: any) => {
+        if (c.id === commentId) {
+          const currentReplies = c.replies || [];
+          return { ...c, replies: [...currentReplies, newReply] };
+        }
+        return c;
+      });
+      localStorage.setItem(commentsKey, JSON.stringify(updated));
+    }
+    return newReply;
+  };
+
   return (
     <PortfolioContext.Provider
       value={{
@@ -593,6 +638,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         signUpWithEmail,
         logOut,
         refreshUser,
+        updateCommentInBlogPost,
+        replyToCommentInBlogPost,
         likeBlogPost,
         unlikeBlogPost,
         checkUserLikedBlogPost,
