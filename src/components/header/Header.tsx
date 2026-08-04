@@ -3,7 +3,7 @@ import UB from "../../assets/upgraderboy_dark.svg";
 import AB from "../../assets/logo1.svg";
 import { usePortfolioData } from "../db/PortfolioContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db, isFirebaseConfigured } from "../db/firebase";
+import { db, auth, isFirebaseConfigured } from "../db/firebase";
 import "./header.css";
 // import Register from "../auth/Register.jsx";
 import Mode from "../mode/Mode.jsx";
