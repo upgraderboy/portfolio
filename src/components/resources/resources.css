@@ -298,24 +298,24 @@
 /* 3D Book Design Card Layout */
 .resources__book-card {
   background-color: var(--container-color);
-  border: 1px solid rgba(100, 116, 139, 0.15);
+  border: 1px solid rgba(100, 116, 139, 0.12);
   border-radius: 1.25rem;
   padding: 1.75rem;
   display: flex;
   column-gap: 2rem;
   align-items: center;
-  transition: 0.3s ease;
+  transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .resources__book-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-8px);
   border-color: var(--green-color);
-  box-shadow: 0 12px 30px rgba(1, 195, 105, 0.08);
+  box-shadow: 0 15px 35px rgba(1, 195, 105, 0.1);
 }
 
 /* 3D Book wrapper & perspective */
 .resources__book-wrapper {
-  perspective: 1200px;
+  perspective: 1500px;
   width: 140px;
   height: 200px;
   flex-shrink: 0;
@@ -326,16 +326,14 @@
 
 .resources__book {
   position: relative;
-  width: 130px;
-  height: 185px;
+  width: 125px;
+  height: 180px;
   transform-style: preserve-3d;
-  transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .resources__book-card:hover .resources__book {
-  transform: rotateY(-28deg) rotateX(8deg) translateZ(10px);
-  box-shadow: 15px 15px 25px rgba(0, 0, 0, 0.4);
+  transform: rotateY(-30deg) rotateX(10deg) translateZ(15px);
 }
 
 /* Book Cover (Front) */
@@ -346,11 +344,39 @@
   width: 100%;
   height: 100%;
   background-color: var(--card-color);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 5px 5px 0;
   overflow: hidden;
   z-index: 2;
-  transform: translateZ(12px); /* page thickness layer offset */
-  box-shadow: inset -4px 0 10px rgba(0, 0, 0, 0.15);
+  transform: translateZ(10px); /* offset for stack layers */
+  box-shadow: inset -3px 0 10px rgba(0, 0, 0, 0.2), 3px 0 6px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Gold Corner Trims for Bookish Detail */
+.resources__book-cover::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #fbbf24; /* gold */
+  border-right: 2px solid #fbbf24;
+  z-index: 10;
+  opacity: 0.8;
+}
+
+.resources__book-cover::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #fbbf24;
+  border-right: 2px solid #fbbf24;
+  z-index: 10;
+  opacity: 0.8;
 }
 
 .resources__book-img {
@@ -362,24 +388,9 @@
 .resources__book-fallback {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  row-gap: 0.75rem;
-  background: linear-gradient(135deg, var(--card-color) 0%, #202b4d 100%);
-  color: var(--green-color);
+  background: var(--card-color);
   border-right: 3px solid var(--green-color);
-}
-
-.resources__book-fallback i {
-  font-size: 2.5rem;
-}
-
-.resources__book-fallback span {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Shiny cover lighting sweep */
@@ -392,38 +403,92 @@
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.08) 25%,
-    rgba(255, 255, 255, 0.15) 50%,
-    rgba(255, 255, 255, 0.08) 75%,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.05) 75%,
     rgba(255, 255, 255, 0) 100%
   );
   transform: skewX(-20deg) translateX(-150%);
-  transition: transform 0.6s ease;
+  transition: transform 0.7s ease;
 }
 
 .resources__book-card:hover .resources__book-overlay {
   transform: skewX(-20deg) translateX(150%);
 }
 
-/* Physical spine layout */
+/* Spine Layout (3D left edge) */
 .resources__book-spine {
   position: absolute;
   top: 0;
   left: 0;
-  width: 24px; /* Spine thickness */
+  width: 20px; /* Spine thickness */
   height: 100%;
-  background-color: #12182b;
+  background-color: var(--green-color);
   background-image: linear-gradient(
     to right,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0) 25%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(0, 0, 0, 0) 75%,
-    rgba(0, 0, 0, 0.5) 100%
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(0, 0, 0, 0.2) 50%,
+    rgba(255, 255, 255, 0.05) 75%,
+    rgba(0, 0, 0, 0.85) 100%
   );
-  transform: rotateY(-90deg) translateZ(12px);
+  transform: rotateY(-90deg) translateZ(0px);
   transform-origin: left;
+  z-index: 3;
+}
+
+/* Pages Stack (3D right edge pages) */
+.resources__book-pages {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: 10px; /* thickness stack */
+  height: calc(100% - 4px);
+  background: repeating-linear-gradient(
+    to bottom,
+    #f8fafc 0px,
+    #cbd5e1 1px,
+    #f8fafc 2px
+  );
+  transform: rotateY(90deg) translateZ(5px);
+  transform-origin: right;
   z-index: 1;
+  border-radius: 0 3px 3px 0;
+  box-shadow: inset 2px 0 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Back Cover (3D rear layer) */
+.resources__book-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--card-color);
+  border-radius: 0 5px 5px 0;
+  transform: translateZ(0px);
+  z-index: 0;
+  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Ribbon Bookmark hanging from bottom */
+.resources__book-ribbon {
+  position: absolute;
+  bottom: -15px;
+  left: 28px;
+  width: 10px;
+  height: 25px;
+  background-color: #ef4444; /* Crimson Red */
+  transform: translateZ(5px) rotateX(10deg);
+  z-index: 1;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.5s ease;
+}
+
+.resources__book-card:hover .resources__book-ribbon {
+  transform: translateZ(5px) rotateX(15deg) translateY(2px);
 }
 
 /* Details and action row */
@@ -449,13 +514,13 @@
 @media screen and (max-width: 576px) {
   .resources__book-card {
     flex-direction: column;
-    row-gap: 1.5rem;
+    row-gap: 1.8rem;
     align-items: center;
     padding: 1.5rem;
   }
   .resources__book-wrapper {
     width: 100%;
-    height: 200px;
+    height: 190px;
   }
   .resources__book-details {
     align-items: center;

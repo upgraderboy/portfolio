@@ -288,6 +288,12 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
                       </div>
                       {/* Spine */}
                       <div className="resources__book-spine"></div>
+                      {/* Paper Pages Stack */}
+                      <div className="resources__book-pages"></div>
+                      {/* Back Cover */}
+                      <div className="resources__book-back"></div>
+                      {/* Bookmark Ribbon */}
+                      <div className="resources__book-ribbon"></div>
                     </div>
                   </div>
 
