@@ -73,6 +73,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [seoSiteTitle, setSeoSiteTitle] = useState(portfolioData.seo?.siteTitle || "");
   const [seoSiteDescription, setSeoSiteDescription] = useState(portfolioData.seo?.siteDescription || "");
   const [seoRoutes, setSeoRoutes] = useState(portfolioData.seo?.routes || []);
+  const [seoFaviconUrl, setSeoFaviconUrl] = useState(portfolioData.seo?.faviconUrl || "");
 
   // Form Route Sub-items state
   const [routePath, setRoutePath] = useState("");
@@ -219,6 +220,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setSeoSiteTitle(portfolioData.seo?.siteTitle || "");
     setSeoSiteDescription(portfolioData.seo?.siteDescription || "");
     setSeoRoutes(portfolioData.seo?.routes || []);
+    setSeoFaviconUrl(portfolioData.seo?.faviconUrl || "");
   }, [portfolioData]);
 
   // Auth Handler
@@ -364,6 +366,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
       siteTitle: seoSiteTitle,
       siteDescription: seoSiteDescription,
       routes: seoRoutes,
+      faviconUrl: seoFaviconUrl,
     });
     alert("Main SEO metadata updated successfully!");
   };
@@ -391,6 +394,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
         siteTitle: seoSiteTitle,
         siteDescription: seoSiteDescription,
         routes: updated,
+        faviconUrl: seoFaviconUrl,
       });
       setEditingId(null);
       alert("SEO sub-route updated successfully!");
@@ -406,6 +410,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
         siteTitle: seoSiteTitle,
         siteDescription: seoSiteDescription,
         routes: updated,
+        faviconUrl: seoFaviconUrl,
       });
       alert("New SEO sub-route added successfully!");
     }
@@ -422,6 +427,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
         siteTitle: seoSiteTitle,
         siteDescription: seoSiteDescription,
         routes: updated,
+        faviconUrl: seoFaviconUrl,
       });
       alert("Sub-route deleted successfully!");
     }
@@ -2696,7 +2702,11 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     justifyContent: "center",
                     marginRight: "0.5rem"
                   }}>
-                    <i className="uil uil-globe" style={{ color: "#5f6368", fontSize: "1rem" }}></i>
+                    {seoFaviconUrl ? (
+                      <img src={seoFaviconUrl} alt="Favicon" style={{ width: "16px", height: "16px", objectFit: "contain" }} />
+                    ) : (
+                      <i className="uil uil-globe" style={{ color: "#5f6368", fontSize: "1rem" }}></i>
+                    )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     <span style={{ fontSize: "0.85rem", color: "#202124", lineHeight: "1.2", fontWeight: "400" }}>{seoSiteTitle || "Upgrader Boy"}</span>
@@ -2775,6 +2785,40 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     onChange={(e) => setSeoSiteTitle(e.target.value)}
                     required
                   />
+                </div>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Favicon Icon (URL or Upload)</label>
+                  <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="Favicon URL or Local Upload"
+                      value={seoFaviconUrl.startsWith("data:") ? "Local Favicon File Uploaded" : seoFaviconUrl}
+                      onChange={(e) => setSeoFaviconUrl(e.target.value)}
+                      disabled={seoFaviconUrl.startsWith("data:")}
+                      style={{ flexGrow: 1 }}
+                    />
+                    <label className="memories__form-file-label" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <i className="uil uil-upload-alt"></i> Upload Favicon
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleImageUpload(e, setSeoFaviconUrl)}
+                      />
+                    </label>
+                    {seoFaviconUrl && (
+                      <button 
+                        type="button" 
+                        className="admin__action-btn admin__action-btn--delete" 
+                        onClick={() => setSeoFaviconUrl("")} 
+                        style={{ height: "100%", width: "42px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        title="Remove Favicon"
+                      >
+                        <i className="uil uil-trash-alt"></i>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="admin__form-group admin__form-group--full">
                   <label className="admin__form-label">Main Search Description (Slogan/Meta tag)</label>

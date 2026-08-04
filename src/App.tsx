@@ -87,7 +87,14 @@ const AppContent: React.FC = () => {
     // 1. Update browser tab title
     document.title = activeTitle || "Upgrader Boy";
 
-    // 2. Update search engine meta description and social graphs
+    // 2. Update favicon icon
+    const faviconUrl = seo.faviconUrl || "/logo.png";
+    const linkIcon = document.querySelector("link[rel='icon']") || document.querySelector("link[rel='shortcut icon']");
+    if (linkIcon) {
+      linkIcon.setAttribute("href", faviconUrl);
+    }
+
+    // 3. Update search engine meta description and social graphs
     document.querySelector("meta[name='description']")?.setAttribute("content", activeDescription);
     document.querySelector("meta[property='og:title']")?.setAttribute("content", activeTitle);
     document.querySelector("meta[property='og:description']")?.setAttribute("content", activeDescription);

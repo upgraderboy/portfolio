@@ -63,7 +63,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               testimonials: data.testimonials || initialPortfolioData.testimonials,
               memories: data.memories || initialPortfolioData.memories,
               blogs: data.blogs || initialPortfolioData.blogs,
-              seo: data.seo || initialPortfolioData.seo,
+              seo: data.seo ? { ...initialPortfolioData.seo, ...data.seo } : initialPortfolioData.seo,
             };
             setPortfolioData(merged);
             localStorage.setItem("portfolio_cached_data", JSON.stringify(merged));

@@ -96,6 +96,7 @@ export interface SeoConfig {
   siteTitle: string;
   siteDescription: string;
   routes: SeoRouteItem[];
+  faviconUrl?: string;
 }
 
 // Default initial data structure (empty template)
@@ -130,6 +131,7 @@ export const initialPortfolioData: PortfolioData = {
   seo: {
     siteTitle: "Upgrader Boy",
     siteDescription: "Tech. That Makes Trends",
+    faviconUrl: "",
     routes: [
       { id: "blogs", path: "/blogs", title: "Blogs", description: "All Tech Blogs from Upgrader Boy" },
       { id: "projects", path: "/projects", title: "Projects", description: "All Projects developed by Upgrader Boy" },
