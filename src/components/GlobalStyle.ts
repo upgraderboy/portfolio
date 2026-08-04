@@ -325,6 +325,56 @@ box-shadow:0px 0px 9px 9px var(--btn-shadow) ;
   color: #fff !important;
 }
 
+/* Shimmer Loader Animations */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(255, 255, 255, 0.16) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 1.5s infinite;
+  content: '';
+}
+
+[data-theme="dark"] .skeleton-shimmer::after {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.04) 20%,
+    rgba(255, 255, 255, 0.08) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-item {
+  border-radius: 4px;
+  background-color: rgba(226, 232, 240, 0.1);
+  display: block;
+}
+
+[data-theme="dark"] .skeleton-item {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
 @keyframes cyber-glitch {
   0% { transform: translate(0) }
   20% { transform: translate(-2px, 2px) }

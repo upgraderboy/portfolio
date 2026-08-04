@@ -41,7 +41,22 @@ const BlogsSection: React.FC<BlogsSectionProps> = ({ navigate }) => {
       <section className="blogs__section section" id="blogs">
         <h2 className="section__title">Blogs</h2>
         <span className="section__subtitle">Technical Articles & Insights</span>
-        <div style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>Loading articles...</div>
+        <div className="blogs__container container">
+          <div className="blogs__grid">
+            {[1, 2, 3].map((n) => (
+              <div className="blog__card skeleton-shimmer" key={n} style={{ border: "1px solid var(--border-color)", borderRadius: "1.25rem", overflow: "hidden" }}>
+                <div className="blog__card-img-wrapper skeleton-item" style={{ height: "200px", width: "100%" }}></div>
+                <div className="blog__card-content" style={{ padding: "1.5rem" }}>
+                  <div className="skeleton-item" style={{ height: "14px", width: "35%", marginBottom: "12px" }}></div>
+                  <div className="skeleton-item" style={{ height: "22px", width: "85%", marginBottom: "16px" }}></div>
+                  <div className="skeleton-item" style={{ height: "14px", width: "100%", marginBottom: "8px" }}></div>
+                  <div className="skeleton-item" style={{ height: "14px", width: "90%", marginBottom: "20px" }}></div>
+                  <div className="skeleton-item" style={{ height: "16px", width: "40%" }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     );
   }

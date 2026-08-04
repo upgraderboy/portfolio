@@ -87,8 +87,19 @@ const BlogsPage: React.FC<BlogsPageProps> = ({ navigate }) => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "var(--text-color-light)", padding: "4rem" }}>
-          Loading all articles...
+        <div className="blogs__grid">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <div className="blog__card skeleton-shimmer" key={n} style={{ border: "1px solid var(--border-color)", borderRadius: "1.25rem", overflow: "hidden" }}>
+              <div className="blog__card-img-wrapper skeleton-item" style={{ height: "200px", width: "100%" }}></div>
+              <div className="blog__card-content" style={{ padding: "1.5rem" }}>
+                <div className="skeleton-item" style={{ height: "14px", width: "35%", marginBottom: "12px" }}></div>
+                <div className="skeleton-item" style={{ height: "22px", width: "85%", marginBottom: "16px" }}></div>
+                <div className="skeleton-item" style={{ height: "14px", width: "100%", marginBottom: "8px" }}></div>
+                <div className="skeleton-item" style={{ height: "14px", width: "90%", marginBottom: "20px" }}></div>
+                <div className="skeleton-item" style={{ height: "16px", width: "40%" }}></div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <>

@@ -25,7 +25,20 @@ function Projects({ navigate }: ProjectsProps) {
   }, [portfolioData.projects, fetchProjects]);
 
   if (loading) {
-    return <div style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>Loading recent works...</div>;
+    return (
+      <div className="project__container container grid" style={{ marginTop: "2rem" }}>
+        {[1, 2, 3].map((n) => (
+          <div className="project__card skeleton-shimmer" key={n} style={{ border: "1px solid var(--border-color)", borderRadius: "1rem", padding: "1.25rem" }}>
+            <div className="skeleton-item" style={{ height: "180px", borderRadius: "1rem", marginBottom: "1rem" }}></div>
+            <div className="skeleton-item" style={{ height: "20px", width: "65%", marginBottom: "1.25rem" }}></div>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <div className="skeleton-item" style={{ height: "30px", width: "65px", borderRadius: "0.5rem" }}></div>
+              <div className="skeleton-item" style={{ height: "30px", width: "65px", borderRadius: "0.5rem" }}></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (

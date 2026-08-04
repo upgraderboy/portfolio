@@ -139,8 +139,17 @@ const MemoriesPage: React.FC<MemoriesPageProps> = ({ navigate }) => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "var(--text-color-light)", padding: "4rem" }}>
-          Loading gallery items...
+        <div className="memories__container container grid">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <div className="memories__card skeleton-shimmer" key={n} style={{ border: "1px solid var(--border-color)", borderRadius: "1.25rem", padding: "1.5rem" }}>
+              <div className="skeleton-item" style={{ height: "220px", borderRadius: "1rem", marginBottom: "1rem" }}></div>
+              <div className="skeleton-item" style={{ height: "22px", width: "70%", marginBottom: "0.5rem" }}></div>
+              <div className="skeleton-item" style={{ height: "14px", width: "35%", marginBottom: "1rem" }}></div>
+              <div className="skeleton-item" style={{ height: "14px", width: "100%", marginBottom: "8px" }}></div>
+              <div className="skeleton-item" style={{ height: "14px", width: "85%", marginBottom: "1.5rem" }}></div>
+              <div className="skeleton-item" style={{ height: "32px", width: "110px", borderRadius: "0.5rem" }}></div>
+            </div>
+          ))}
         </div>
       ) : (
         <>

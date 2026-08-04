@@ -52,10 +52,10 @@ export const Iframe = Node.create({
         default: null,
       },
       width: {
-        default: "560",
+        default: "100%",
       },
       height: {
-        default: "315",
+        default: "600",
       },
       frameborder: {
         default: "0",
@@ -64,7 +64,17 @@ export const Iframe = Node.create({
         default: "true",
       },
       style: {
-        default: "max-width: 100%; border-radius: 8px; margin: 12px 0; display: block; aspect-ratio: 16/9; width: 100%; height: auto;",
+        default: null,
+        parseHTML: (element) => element.getAttribute("style"),
+        renderHTML: (attributes) => {
+          if (attributes.style) {
+            return { style: attributes.style };
+          }
+          // Default fallback style for standard video/youtube embeds
+          return {
+            style: "max-width: 100%; border-radius: 8px; margin: 12px 0; display: block; aspect-ratio: 16/9; width: 100%; height: auto;",
+          };
+        },
       },
     };
   },
