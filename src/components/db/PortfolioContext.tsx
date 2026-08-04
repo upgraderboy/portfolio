@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, limit } from "firebase/firestore";
 import { 
-  User, 
   onAuthStateChanged, 
   signInWithPopup, 
   GoogleAuthProvider, 
