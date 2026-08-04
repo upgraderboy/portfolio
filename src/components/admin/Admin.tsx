@@ -3573,6 +3573,79 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                 </tbody>
               </table>
             </div>
+
+            {/* Direct PDF Viewer Cards Preview */}
+            <h3 className="admin__form-title" style={{ textAlign: "left", margin: "3rem 0 1rem" }}>
+              <i className="uil uil-eye"></i> Dynamic PDF Viewer & Cards Grid
+            </h3>
+            <span className="admin__content-subtitle" style={{ display: "block", marginBottom: "1.5rem" }}>
+              Review published resources, read documents, and interact with the 3D flipbook directly inside your control panel:
+            </span>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(450px, 1fr))", gap: "1.5rem", marginBottom: "3rem" }} className="admin__form-grid--two-columns">
+              {(portfolioData.resources || []).length > 0 ? (
+                (portfolioData.resources || []).map((r) => (
+                  <div key={r.id} className="admin__form-card" style={{ display: "flex", flexDirection: "column", rowGap: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                      <div>
+                        <span style={{ fontSize: "0.75rem", color: "var(--green-color)", fontWeight: "600", textTransform: "uppercase" }}>
+                          {resolveCategoryPathNames(r.categoryPath)}
+                        </span>
+                        <h4 style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--title-color)", marginTop: "0.25rem" }}>{r.title}</h4>
+                      </div>
+                      <span style={{ fontSize: "0.75rem", color: "var(--text-color-light)", fontFamily: "monospace" }}>{r.dateAdded}</span>
+                    </div>
+
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-color)", lineBreak: "auto", margin: 0 }}>{r.description}</p>
+                    
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                      {r.tags.map((t: string, idx: number) => (
+                        <span key={idx} className="admin__tag" style={{ fontSize: "0.7rem" }}>#{t}</span>
+                      ))}
+                      {r.source && (
+                        <span className="admin__tag" style={{ fontSize: "0.7rem", backgroundColor: "rgba(100, 116, 139, 0.1)", color: "var(--text-color-light)" }}>
+                          Source: {r.source}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Compact Interactive 3D Flipbook Iframe */}
+                    <div style={{ border: "1px solid rgba(100, 116, 139, 0.15)", borderRadius: "0.5rem", overflow: "hidden", height: "350px", backgroundColor: "#000" }}>
+                      <iframe 
+                        src={`/flipbook/index.html?file=${encodeURIComponent(r.pdfUrl)}`} 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: "none", display: "block" }} 
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "auto" }}>
+                      <button
+                        type="button"
+                        className="admin__btn admin__btn--secondary"
+                        style={{ padding: "0.5rem 1rem", fontSize: "0.8rem" }}
+                        onClick={() => startEditResource(r)}
+                      >
+                        <i className="uil uil-edit"></i> Edit Details
+                      </button>
+                      <button
+                        type="button"
+                        className="admin__btn admin__btn--danger"
+                        style={{ padding: "0.5rem 1rem", fontSize: "0.8rem" }}
+                        onClick={() => handleDeleteResource(r.id)}
+                      >
+                        <i className="uil uil-trash-alt"></i> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="admin__form-card" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem", color: "var(--text-color-light)" }}>
+                  No published documents available to display.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
