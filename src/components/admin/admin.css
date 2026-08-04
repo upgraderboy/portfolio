@@ -444,15 +444,24 @@
   }
 
   .admin__nav {
-    flex-direction: row;
-    column-gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
     width: 100%;
+  }
+
+  @media screen and (max-width: 600px) {
+    .admin__nav {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .admin__nav-item {
     white-space: nowrap;
+    justify-content: center;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
   }
 
   .admin__sidebar-footer {
