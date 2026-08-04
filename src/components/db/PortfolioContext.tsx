@@ -21,6 +21,7 @@ interface PortfolioContextType {
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
   logOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   updateHomeAbout: (homeData: PortfolioData["home"], aboutData: PortfolioData["about"]) => void;
   updateSkills: (skillsData: PortfolioData["skills"]) => void;
   updateServices: (servicesData: PortfolioData["services"]) => void;
@@ -439,6 +440,13 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const refreshUser = async () => {
+    if (isFirebaseConfigured && auth && auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser(auth.currentUser);
+    }
+  };
+
   return (
     <PortfolioContext.Provider
       value={{
@@ -450,6 +458,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         signInWithEmail,
         signUpWithEmail,
         logOut,
+        refreshUser,
         updateHomeAbout,
         updateSkills,
         updateServices,

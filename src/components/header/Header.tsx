@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UB from "../../assets/upgraderboy_dark.svg";
 import AB from "../../assets/logo1.svg";
 import { usePortfolioData } from "../db/PortfolioContext";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db, isFirebaseConfigured } from "../db/firebase";
 import "./header.css";
 // import Register from "../auth/Register.jsx";
 import Mode from "../mode/Mode.jsx";
@@ -23,7 +25,8 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
     signInWithGoogle, 
     signInWithEmail, 
     signUpWithEmail, 
-    logOut 
+    logOut,
+    refreshUser
   } = usePortfolioData();
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -34,6 +37,17 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
   const [name, setName] = useState("");
   const [authError, setAuthError] = useState("");
   const [authLoadingState, setAuthLoadingState] = useState(false);
+
+  // User Profile Form States
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileBio, setProfileBio] = useState("");
+  const [profileLocation, setProfileLocation] = useState("");
+  const [profilePhotoURL, setProfilePhotoURL] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState(false);
 
   const getFriendlyAuthErrorMessage = (err: any): string => {
     if (!err) return "An unexpected error occurred.";
@@ -110,6 +124,110 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
     setPassword("");
     setName("");
     setAuthError("");
+  };
+
+  // Fetch extra profile details when the profile modal is opened
+  useEffect(() => {
+    if (!showProfileModal || !user) return;
+    
+    setProfileName(user.displayName || "");
+    setProfilePhotoURL(user.photoURL || "");
+    setProfilePhone("");
+    setProfileBio("");
+    setProfileLocation("");
+
+    const fetchDetails = async () => {
+      setProfileLoading(true);
+      if (isFirebaseConfigured && db) {
+        try {
+          const docRef = doc(db, "users", user.uid);
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.displayName) setProfileName(data.displayName);
+            if (data.phoneNumber) setProfilePhone(data.phoneNumber);
+            if (data.bio) setProfileBio(data.bio);
+            if (data.location) setProfileLocation(data.location);
+            if (data.photoURL) setProfilePhotoURL(data.photoURL);
+          }
+        } catch (e) {
+          console.error("Failed to load user profile:", e);
+        }
+      } else {
+        const cached = localStorage.getItem(`profile_details_${user.uid}`);
+        if (cached) {
+          try {
+            const data = JSON.parse(cached);
+            if (data.displayName) setProfileName(data.displayName);
+            if (data.phoneNumber) setProfilePhone(data.phoneNumber);
+            if (data.bio) setProfileBio(data.bio);
+            if (data.location) setProfileLocation(data.location);
+            if (data.photoURL) setProfilePhotoURL(data.photoURL);
+          } catch (e) {}
+        }
+      }
+      setProfileLoading(false);
+    };
+
+    fetchDetails();
+  }, [showProfileModal, user]);
+
+  // Save the updated profile details
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setProfileSaving(true);
+    setProfileSuccess(false);
+
+    try {
+      if (isFirebaseConfigured && db && auth) {
+        const { updateProfile } = await import("firebase/auth");
+        if (auth.currentUser) {
+          await updateProfile(auth.currentUser, {
+            displayName: profileName,
+            photoURL: profilePhotoURL || null
+          });
+        }
+
+        const docRef = doc(db, "users", user.uid);
+        await setDoc(docRef, {
+          displayName: profileName,
+          email: user.email,
+          phoneNumber: profilePhone,
+          photoURL: profilePhotoURL,
+          bio: profileBio,
+          location: profileLocation,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        await refreshUser();
+      } else {
+        const updatedUser = {
+          ...user,
+          displayName: profileName,
+          photoURL: profilePhotoURL || null
+        };
+        localStorage.setItem("portfolio_mock_user", JSON.stringify(updatedUser));
+        localStorage.setItem(`profile_details_${user.uid}`, JSON.stringify({
+          displayName: profileName,
+          phoneNumber: profilePhone,
+          photoURL: profilePhotoURL,
+          bio: profileBio,
+          location: profileLocation
+        }));
+        window.location.reload();
+      }
+      setProfileSuccess(true);
+      setTimeout(() => {
+        setProfileSuccess(false);
+        setShowProfileModal(false);
+      }, 1500);
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+      alert("Failed to save profile details. Please try again.");
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
@@ -348,6 +466,31 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
                     <div style={{ fontSize: "0.8rem", color: "var(--text-color-light)", marginBottom: "0.5rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       Hi, {user.displayName || user.email?.split("@")[0] || "User"}
                     </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileModal(true);
+                        setShowUserDropdown(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        columnGap: "0.5rem",
+                        width: "100%",
+                        padding: "0.5rem",
+                        borderRadius: "0.5rem",
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--title-color)",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        transition: "background 0.2s",
+                        marginBottom: "0.25rem"
+                      }}
+                      className="nav__user-menu-item"
+                    >
+                      <i className="uil uil-user-circle" style={{ fontSize: "1.1rem", color: "var(--green-color)" }}></i> My Profile
+                    </button>
                     <button
                       onClick={() => {
                         logOut();
@@ -643,6 +786,229 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
               </svg>
               Google Account
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal Overlay */}
+      {showProfileModal && user && (
+        <div 
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 99999,
+            padding: "1rem"
+          }}
+          onClick={() => setShowProfileModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: "var(--container-color)",
+              border: "1px solid rgba(100, 116, 139, 0.15)",
+              borderRadius: "1.25rem",
+              padding: "2rem",
+              maxWidth: "480px",
+              width: "100%",
+              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25)",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowProfileModal(false)}
+              style={{
+                position: "absolute",
+                top: "1rem",
+                right: "1rem",
+                background: "transparent",
+                border: "none",
+                fontSize: "1.5rem",
+                color: "var(--text-color-light)",
+                cursor: "pointer",
+                padding: "0.25rem",
+                lineHeight: 1
+              }}
+            >
+              <i className="uil uil-times"></i>
+            </button>
+
+            <h3 style={{ fontSize: "1.25rem", color: "var(--title-color)", marginBottom: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <i className="uil uil-user-circle" style={{ color: "var(--green-color)" }}></i> Edit Profile
+            </h3>
+
+            {profileLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "3rem 0" }}>
+                <div className="portfolio-loader-circle" style={{ borderTopColor: "var(--green-color)" }}></div>
+                <span style={{ fontSize: "0.85rem", color: "var(--text-color-light)", marginTop: "1rem" }}>Retrieving profile...</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveProfile} style={{ display: "flex", flexDirection: "column", rowGap: "1rem" }}>
+                {profileSuccess && (
+                  <div style={{ backgroundColor: "rgba(1, 195, 105, 0.08)", border: "1px solid rgba(1, 195, 105, 0.2)", color: "var(--green-color)", padding: "0.75rem", borderRadius: "0.5rem", fontSize: "0.85rem", fontWeight: 600, textAlign: "center" }}>
+                    Profile saved successfully!
+                  </div>
+                )}
+
+                {/* Email (Read Only) */}
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Email (Read-only)</label>
+                  <input 
+                    type="text" 
+                    value={user.email || ""} 
+                    disabled 
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.15)",
+                      backgroundColor: "rgba(100, 116, 139, 0.08)",
+                      color: "var(--text-color-light)",
+                      fontSize: "0.85rem",
+                      cursor: "not-allowed"
+                    }}
+                  />
+                </div>
+
+                {/* Name */}
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Display Name</label>
+                  <input 
+                    type="text" 
+                    value={profileName} 
+                    onChange={(e) => setProfileName(e.target.value)} 
+                    required 
+                    placeholder="John Doe"
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.2)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      fontSize: "0.85rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                {/* Phone Number */}
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Phone Number</label>
+                  <input 
+                    type="tel" 
+                    value={profilePhone} 
+                    onChange={(e) => setProfilePhone(e.target.value)} 
+                    placeholder="+1 234 567 8900"
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.2)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      fontSize: "0.85rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                {/* Avatar Image URL */}
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Avatar Photo URL</label>
+                  <input 
+                    type="url" 
+                    value={profilePhotoURL} 
+                    onChange={(e) => setProfilePhotoURL(e.target.value)} 
+                    placeholder="https://example.com/avatar.jpg"
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.2)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      fontSize: "0.85rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                {/* Location */}
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Location</label>
+                  <input 
+                    type="text" 
+                    value={profileLocation} 
+                    onChange={(e) => setProfileLocation(e.target.value)} 
+                    placeholder="New York, USA"
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.2)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      fontSize: "0.85rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                {/* Bio */}
+                <div style={{ display: "flex", flexDirection: "column", rowGap: "0.35rem" }}>
+                  <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--title-color)" }}>Bio Description</label>
+                  <textarea 
+                    value={profileBio} 
+                    onChange={(e) => setProfileBio(e.target.value)} 
+                    placeholder="A short bio about yourself..."
+                    rows={3}
+                    style={{
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "0.5rem",
+                      border: "1px solid rgba(100, 116, 139, 0.2)",
+                      backgroundColor: "var(--container-color)",
+                      color: "var(--title-color)",
+                      fontSize: "0.85rem",
+                      outline: "none",
+                      resize: "none",
+                      fontFamily: "inherit"
+                    }}
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={profileSaving}
+                  style={{
+                    backgroundColor: "var(--green-color)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    padding: "0.75rem",
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                    marginTop: "0.5rem",
+                    transition: "background 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    columnGap: "0.5rem"
+                  }}
+                >
+                  {profileSaving ? (
+                    <div className="portfolio-loader-circle" style={{ width: "16px", height: "16px", borderWidth: "2px", borderColor: "rgba(255,255,255,0.2)", borderTopColor: "#fff" }} />
+                  ) : null}
+                  Save Profile Details
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
