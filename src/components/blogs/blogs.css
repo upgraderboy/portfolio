@@ -443,3 +443,7 @@
   font-size: inherit;
   color: inherit;
 }
+
+.blog-post__share-item:hover {
+  background-color: rgba(100, 116, 139, 0.08) !important;
+}
