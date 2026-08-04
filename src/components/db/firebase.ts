@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
-import { getAuth, Auth } from "firebase/auth";
+import { initializeAuth, browserLocalPersistence, browserSessionPersistence, Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,7 +24,9 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "PLACEHOLDER") {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     storage = getStorage(app);
-    auth = getAuth(app);
+    auth = initializeAuth(app, {
+      persistence: [browserLocalPersistence, browserSessionPersistence]
+    });
     isFirebaseConfigured = true;
     console.log("Firebase Firestore, Storage, and Auth initialized successfully.");
   } catch (error) {
