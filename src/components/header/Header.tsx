@@ -35,6 +35,32 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
   const [authError, setAuthError] = useState("");
   const [authLoadingState, setAuthLoadingState] = useState(false);
 
+  const getFriendlyAuthErrorMessage = (err: any): string => {
+    if (!err) return "An unexpected error occurred.";
+    const code = err.code || "";
+    
+    switch (code) {
+      case "auth/operation-not-allowed":
+        return "Sign-in methods are disabled. Please go to Firebase Console > Authentication > Sign-in method and enable 'Email/Password' and 'Google'.";
+      case "auth/email-already-in-use":
+        return "This email address is already in use by another account.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/weak-password":
+        return "The password is too weak. It must be at least 6 characters long.";
+      case "auth/user-not-found":
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        return "Incorrect email or password. Please try again.";
+      case "auth/popup-closed-by-user":
+        return "The Google login popup was closed before completion.";
+      case "auth/cancelled-popup-request":
+        return "Google login popup request was cancelled.";
+      default:
+        return err.message || "Authentication failed. Please try again.";
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -44,7 +70,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
       setShowAuthModal(false);
       resetForm();
     } catch (err: any) {
-      setAuthError(err.message || "Failed to sign in. Please try again.");
+      setAuthError(getFriendlyAuthErrorMessage(err));
     } finally {
       setAuthLoadingState(false);
     }
@@ -59,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
       setShowAuthModal(false);
       resetForm();
     } catch (err: any) {
-      setAuthError(err.message || "Failed to create account. Please try again.");
+      setAuthError(getFriendlyAuthErrorMessage(err));
     } finally {
       setAuthLoadingState(false);
     }
@@ -73,7 +99,7 @@ const Header: React.FC<HeaderProps> = ({ currentRoute, navigate })=>{
       setShowAuthModal(false);
       resetForm();
     } catch (err: any) {
-      setAuthError(err.message || "Failed to sign in with Google.");
+      setAuthError(getFriendlyAuthErrorMessage(err));
     } finally {
       setAuthLoadingState(false);
     }
