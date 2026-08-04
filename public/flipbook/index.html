@@ -224,14 +224,32 @@
     // Initialize PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/build/pdf.worker.js";
 
-    // Grab file and cover from URL
+    // Grab file from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const pdfUrl = urlParams.get("file");
-    const coverUrl = urlParams.get("cover");
+    const fileParam = urlParams.get("file");
 
-    if (!pdfUrl) {
+    let pdfUrl = fileParam || "";
+    let coverUrl = "";
+
+    if (!fileParam) {
       document.getElementById("loader").innerHTML = "<div>Error: No PDF URL specified.</div>";
     } else {
+      // Try resolving resource details from local storage cache
+      try {
+        const cachedData = localStorage.getItem("portfolio_cached_data");
+        if (cachedData) {
+          const parsed = JSON.parse(cachedData);
+          const resources = parsed.resources || [];
+          const match = resources.find((r) => r.id === fileParam || r.pdfUrl === fileParam);
+          if (match) {
+            pdfUrl = match.pdfUrl;
+            coverUrl = match.thumbnailUrl || "";
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse cache in flipbook viewer:", e);
+      }
+
       loadBook();
     }
 

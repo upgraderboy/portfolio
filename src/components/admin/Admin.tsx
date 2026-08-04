@@ -3647,7 +3647,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                     {/* Compact Interactive 3D Flipbook Iframe */}
                     <div style={{ border: "1px solid rgba(100, 116, 139, 0.15)", borderRadius: "0.5rem", overflow: "hidden", height: "600px", backgroundColor: "#000" }}>
                       <iframe 
-                        src={`/flipbook/index.html?file=${encodeURIComponent(r.pdfUrl)}&cover=${encodeURIComponent(r.thumbnailUrl || "")}`} 
+                        src={`/flipbook/index.html?file=${encodeURIComponent(r.id)}`} 
                         width="100%" 
                         height="100%" 
                         style={{ border: "none", display: "block" }} 

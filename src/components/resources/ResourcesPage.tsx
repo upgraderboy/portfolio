@@ -205,7 +205,7 @@ const ResourcesPage: React.FC<ResourcesPageProps> = ({ navigate }) => {
 
                     <button
                       className="resources__card-btn button button--flex"
-                      onClick={() => window.location.href = `/flipbook/index.html?file=${encodeURIComponent(res.pdfUrl)}&cover=${encodeURIComponent(res.thumbnailUrl || "")}`}
+                      onClick={() => window.location.href = `/flipbook/index.html?file=${encodeURIComponent(res.id)}`}
                     >
                       Read Document
                       <i className="uil uil-book-open button__icon" style={{ marginLeft: "0.5rem" }}></i>
