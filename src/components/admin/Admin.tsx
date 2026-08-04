@@ -26,6 +26,8 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     updateMemories,
     updateBlogs,
     updateSeo,
+    updateResources,
+    updateResourceCategories,
   } = usePortfolioData();
 
   // Theme State
@@ -79,6 +81,21 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [routePath, setRoutePath] = useState("");
   const [routeTitle, setRouteTitle] = useState("");
   const [routeDescription, setRouteDescription] = useState("");
+
+  // Resources State
+  const [resTitle, setResTitle] = useState("");
+  const [resDescription, setResDescription] = useState("");
+  const [resPdfUrl, setResPdfUrl] = useState("");
+  const [resCategory, setResCategory] = useState("");
+  const [resSubcategory, setResSubcategory] = useState("");
+  const [resTags, setResTags] = useState("");
+  const [resSource, setResSource] = useState("");
+
+  // Category Configuration state
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [selectedParentCategory, setSelectedParentCategory] = useState("");
+  const [newSubcategoryName, setNewSubcategoryName] = useState("");
+
 
 
   // Projects State Form
@@ -445,6 +462,155 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setRoutePath("");
     setRouteTitle("");
     setRouteDescription("");
+  };
+
+  // Resources CRUD Actions
+  const resetResourceForm = () => {
+    setEditingId(null);
+    setResTitle("");
+    setResDescription("");
+    setResPdfUrl("");
+    setResCategory("");
+    setResSubcategory("");
+    setResTags("");
+    setResSource("");
+  };
+
+  const handleAddResource = (e: React.FormEvent) => {
+    e.preventDefault();
+    const resList = portfolioData.resources || [];
+    const parsedTags = resTags.split(",").map((t) => t.trim()).filter((t) => t !== "");
+
+    if (editingId) {
+      const updated = resList.map((r) => {
+        if (r.id === editingId) {
+          return {
+            ...r,
+            title: resTitle,
+            description: resDescription,
+            pdfUrl: resPdfUrl,
+            category: resCategory,
+            subcategory: resSubcategory || undefined,
+            tags: parsedTags,
+            source: resSource || undefined,
+          };
+        }
+        return r;
+      });
+      updateResources(updated);
+      setEditingId(null);
+      alert("Resource updated successfully!");
+    } else {
+      const newRes = {
+        id: "res-" + Date.now(),
+        title: resTitle,
+        description: resDescription,
+        pdfUrl: resPdfUrl,
+        category: resCategory,
+        subcategory: resSubcategory || undefined,
+        tags: parsedTags,
+        source: resSource || undefined,
+        dateAdded: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
+      };
+      updateResources([...resList, newRes]);
+      alert("Resource added successfully!");
+    }
+    resetResourceForm();
+  };
+
+  const handleDeleteResource = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this resource?")) {
+      const resList = portfolioData.resources || [];
+      updateResources(resList.filter((r) => r.id !== id));
+      alert("Resource deleted successfully!");
+    }
+  };
+
+  const startEditResource = (r: any) => {
+    setEditingId(r.id);
+    setResTitle(r.title);
+    setResDescription(r.description);
+    setResPdfUrl(r.pdfUrl);
+    setResCategory(r.category);
+    setResSubcategory(r.subcategory || "");
+    setResTags(r.tags.join(", "));
+    setResSource(r.source || "");
+  };
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const categories = portfolioData.resourceCategories || [];
+    if (!newCategoryName.trim()) return;
+
+    if (categories.some((c) => c.name.toLowerCase() === newCategoryName.trim().toLowerCase())) {
+      alert("Category already exists.");
+      return;
+    }
+
+    const newCat = {
+      id: "cat-" + Date.now(),
+      name: newCategoryName.trim(),
+      subcategories: [],
+    };
+    updateResourceCategories([...categories, newCat]);
+    setNewCategoryName("");
+    alert("Category created successfully!");
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    if (window.confirm("Are you sure you want to delete this category? All subcategories will be removed.")) {
+      const categories = portfolioData.resourceCategories || [];
+      updateResourceCategories(categories.filter((c) => c.id !== catId));
+      if (selectedParentCategory === catId) {
+         setSelectedParentCategory("");
+      }
+      alert("Category deleted successfully!");
+    }
+  };
+
+  const handleAddSubcategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedParentCategory) {
+      alert("Please select a parent category first.");
+      return;
+    }
+    if (!newSubcategoryName.trim()) return;
+
+    const categories = portfolioData.resourceCategories || [];
+    const updated = categories.map((c) => {
+      if (c.id === selectedParentCategory) {
+        if (c.subcategories.some((sub) => sub.toLowerCase() === newSubcategoryName.trim().toLowerCase())) {
+          alert("Subcategory already exists under this parent category.");
+          return c;
+        }
+        return {
+          ...c,
+          subcategories: [...c.subcategories, newSubcategoryName.trim()],
+        };
+      }
+      return c;
+    });
+
+    updateResourceCategories(updated);
+    setNewSubcategoryName("");
+    alert("Subcategory added successfully!");
+  };
+
+  const handleDeleteSubcategory = (catId: string, subName: string) => {
+    if (window.confirm(`Are you sure you want to delete subcategory "${subName}"?`)) {
+      const categories = portfolioData.resourceCategories || [];
+      const updated = categories.map((c) => {
+        if (c.id === catId) {
+          return {
+            ...c,
+            subcategories: c.subcategories.filter((sub) => sub !== subName),
+          };
+        }
+        return c;
+      });
+      updateResourceCategories(updated);
+      alert("Subcategory deleted successfully!");
+    }
   };
 
   // 2. Project CRUD
@@ -894,6 +1060,12 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
             onClick={() => setActiveTab("seo")}
           >
             <i className="uil uil-search"></i> Google SEO
+          </div>
+          <div
+            className={`admin__nav-item ${activeTab === "resources" ? "active" : ""}`}
+            onClick={() => setActiveTab("resources")}
+          >
+            <i className="uil uil-file-bookmark-alt"></i> Resources Catalog
           </div>
         </div>
 
@@ -2939,6 +3111,347 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                 )}
               </div>
             </form>
+          </div>
+        )}
+
+        {/* TAB 8: RESOURCES CATALOG */}
+        {activeTab === "resources" && (
+          <div>
+            <div className="admin__content-header">
+              <div>
+                <h2 className="admin__content-title">Resources Catalog</h2>
+                <span className="admin__content-subtitle">Manage study resources, books, papers, and dynamic categories</span>
+              </div>
+            </div>
+
+            {/* Part 1: Category & Subcategory Administration */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginBottom: "2rem" }} className="admin__form-grid--two-columns">
+              {/* Category Lists */}
+              <div className="admin__form-card">
+                <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1.5rem" }}>
+                  <i className="uil uil-folder-open"></i> Categories & Subcategories
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {(portfolioData.resourceCategories || []).length > 0 ? (
+                    (portfolioData.resourceCategories || []).map((cat) => (
+                      <div 
+                        key={cat.id} 
+                        style={{ 
+                          padding: "1rem", 
+                          borderRadius: "0.5rem", 
+                          backgroundColor: selectedParentCategory === cat.id ? "rgba(1, 195, 105, 0.1)" : "var(--container-color)", 
+                          border: selectedParentCategory === cat.id ? "1px solid var(--green-color)" : "1px solid rgba(100, 116, 139, 0.15)",
+                          cursor: "pointer"
+                        }}
+                        onClick={() => setSelectedParentCategory(cat.id)}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <span style={{ fontWeight: "600", color: "var(--title-color)" }}>{cat.name}</span>
+                          <button 
+                            type="button" 
+                            className="admin__action-btn admin__action-btn--delete" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCategory(cat.id);
+                            }}
+                            title="Delete Category"
+                          >
+                            <i className="uil uil-trash-alt"></i>
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                          {cat.subcategories.length > 0 ? (
+                            cat.subcategories.map((sub, idx) => (
+                              <span 
+                                key={idx} 
+                                className="admin__tag" 
+                                style={{ 
+                                  fontSize: "0.7rem", 
+                                  padding: "0.15rem 0.4rem", 
+                                  backgroundColor: "rgba(100, 116, 139, 0.1)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  columnGap: "0.2rem"
+                                }}
+                              >
+                                {sub}
+                                <i 
+                                  className="uil uil-times" 
+                                  style={{ cursor: "pointer", color: "var(--text-color-light)" }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSubcategory(cat.id, sub);
+                                  }}
+                                ></i>
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-color-light)", fontStyle: "italic" }}>No subcategories configured yet.</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <span style={{ color: "var(--text-color-light)", fontSize: "0.85rem" }}>No categories configured yet. Create one on the right!</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Add Category Forms */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                {/* Create Parent Category */}
+                <form onSubmit={handleAddCategory} className="admin__form-card">
+                  <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
+                    <i className="uil uil-plus-circle"></i> Create Category
+                  </h3>
+                  <div className="admin__form-group" style={{ marginBottom: "1rem" }}>
+                    <label className="admin__form-label">New Category Name *</label>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="e.g. Books, Notes, Papers"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="admin__btn admin__btn--primary">Add Category</button>
+                </form>
+
+                {/* Create Subcategory */}
+                <form onSubmit={handleAddSubcategory} className="admin__form-card">
+                  <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
+                    <i className="uil uil-plus-circle"></i> Add Subcategory
+                  </h3>
+                  <div className="admin__form-group" style={{ marginBottom: "1rem" }}>
+                    <label className="admin__form-label">Selected Category</label>
+                    <select
+                      className="admin__form-input"
+                      value={selectedParentCategory}
+                      onChange={(e) => setSelectedParentCategory(e.target.value)}
+                      style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
+                    >
+                      <option value="">-- Choose Category --</option>
+                      {(portfolioData.resourceCategories || []).map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="admin__form-group" style={{ marginBottom: "1rem" }}>
+                    <label className="admin__form-label">New Subcategory Name *</label>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="e.g. DSA, Mathematics, GATE"
+                      value={newSubcategoryName}
+                      onChange={(e) => setNewSubcategoryName(e.target.value)}
+                      disabled={!selectedParentCategory}
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="admin__btn admin__btn--primary" disabled={!selectedParentCategory}>
+                    Add Subcategory
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Part 2: Add/Edit Resource Form */}
+            <form onSubmit={handleAddResource} className="admin__form-card">
+              <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
+                <i className="uil uil-file-plus-alt"></i> {editingId ? "Edit Resource Document" : "Add New Resource Document"}
+              </h3>
+              <div className="admin__form-grid" style={{ marginBottom: "1.5rem" }}>
+                <div className="admin__form-group">
+                  <label className="admin__form-label">Resource Title *</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="e.g. Introduction to Algorithms 3rd Ed."
+                    value={resTitle}
+                    onChange={(e) => setResTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="admin__form-group">
+                  <label className="admin__form-label">Source / Author (Optional)</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="e.g. Thomas H. Cormen, or My Hand Notes"
+                    value={resSource}
+                    onChange={(e) => setResSource(e.target.value)}
+                  />
+                </div>
+                
+                {/* PDF URL Input / Local Uploader */}
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">PDF File Document * (URL or Local File Upload)</label>
+                  <div style={{ display: "flex", columnGap: "0.5rem" }}>
+                    <input
+                      type="text"
+                      className="admin__form-input"
+                      placeholder="PDF Document URL"
+                      value={resPdfUrl.startsWith("data:") ? "Local PDF Document File Uploaded" : resPdfUrl}
+                      onChange={(e) => setResPdfUrl(e.target.value)}
+                      disabled={resPdfUrl.startsWith("data:")}
+                      style={{ flexGrow: 1 }}
+                      required
+                    />
+                    <label className="memories__form-file-label" style={{ display: "flex", alignItems: "center", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <i className="uil uil-upload-alt"></i> Upload PDF
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        style={{ display: "none" }}
+                        onChange={handlePdfUpload}
+                      />
+                    </label>
+                    {resPdfUrl && (
+                      <button type="button" className="admin__btn admin__btn--danger" onClick={() => setResPdfUrl("")} style={{ padding: "0.75rem" }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category & Subcategory Selectors */}
+                <div className="admin__form-group">
+                  <label className="admin__form-label">Category *</label>
+                  <select
+                    className="admin__form-input"
+                    value={resCategory}
+                    onChange={(e) => {
+                      setResCategory(e.target.value);
+                      setResSubcategory(""); // Reset sub-category on parent category change
+                    }}
+                    style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
+                    required
+                  >
+                    <option value="">-- Select Category --</option>
+                    {(portfolioData.resourceCategories || []).map((cat) => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="admin__form-group">
+                  <label className="admin__form-label">Sub-category (Optional)</label>
+                  <select
+                    className="admin__form-input"
+                    value={resSubcategory}
+                    onChange={(e) => setResSubcategory(e.target.value)}
+                    style={{ width: "100%", padding: "0.8rem 1rem", borderRadius: "0.5rem" }}
+                    disabled={!resCategory}
+                  >
+                    <option value="">-- None / General --</option>
+                    {(() => {
+                      const parent = (portfolioData.resourceCategories || []).find((c) => c.name === resCategory);
+                      return parent ? parent.subcategories.map((sub, idx) => (
+                        <option key={idx} value={sub}>{sub}</option>
+                      )) : null;
+                    })()}
+                  </select>
+                </div>
+
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Search Tags (Comma-separated)</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="e.g. algorithm, dsa, cormen, book"
+                    value={resTags}
+                    onChange={(e) => setResTags(e.target.value)}
+                  />
+                </div>
+
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Short Description *</label>
+                  <textarea
+                    className="admin__form-textarea"
+                    placeholder="Provide a quick summary of what this document covers..."
+                    value={resDescription}
+                    onChange={(e) => setResDescription(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button type="submit" className="admin__btn admin__btn--primary">
+                  {editingId ? "Update Resource" : "Publish Resource"}
+                </button>
+                {(editingId || resTitle || resDescription || resPdfUrl) && (
+                  <button type="button" className="admin__btn admin__btn--secondary" onClick={resetResourceForm}>
+                    Clear Form
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Part 3: Resources catalog table */}
+            <h3 className="admin__form-title" style={{ textAlign: "left", margin: "2rem 0 1rem" }}>Active Catalog Resources</h3>
+            <div className="admin__table-container">
+              <table className="admin__table">
+                <thead>
+                  <tr>
+                    <th>Document Title</th>
+                    <th>Category</th>
+                    <th>Subcategory</th>
+                    <th>Tags</th>
+                    <th>Source</th>
+                    <th style={{ width: "120px" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(portfolioData.resources || []).length > 0 ? (
+                    (portfolioData.resources || []).map((r) => (
+                      <tr key={r.id}>
+                        <td style={{ fontWeight: "600" }}>
+                          <span style={{ marginRight: "0.5rem", color: "var(--green-color)" }}><i className="uil uil-file-pdf"></i></span>
+                          {r.title}
+                        </td>
+                        <td>{r.category}</td>
+                        <td>{r.subcategory || <span style={{ color: "var(--text-color-light)", fontStyle: "italic" }}>None</span>}</td>
+                        <td>
+                          <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+                            {r.tags.map((t, idx) => (
+                              <span key={idx} className="admin__tag" style={{ fontSize: "0.7rem", padding: "0.1rem 0.35rem" }}>{t}</span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>{r.source || <span style={{ color: "var(--text-color-light)", fontStyle: "italic" }}>None</span>}</td>
+                        <td>
+                          <div className="admin__table-actions">
+                            <button
+                              type="button"
+                              className="admin__action-btn admin__action-btn--edit"
+                              onClick={() => startEditResource(r)}
+                              title="Edit Resource"
+                            >
+                              <i className="uil uil-edit"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="admin__action-btn admin__action-btn--delete"
+                              onClick={() => handleDeleteResource(r.id)}
+                              title="Delete Resource"
+                            >
+                              <i className="uil uil-trash-alt"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>
+                        No catalog resources uploaded yet. Publish your first document above!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

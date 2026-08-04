@@ -15,6 +15,8 @@ interface PortfolioContextType {
   updateMemories: (memoriesData: PortfolioData["memories"]) => void;
   updateBlogs: (blogsData: NonNullable<PortfolioData["blogs"]>) => void;
   updateSeo: (seoData: NonNullable<PortfolioData["seo"]>) => void;
+  updateResources: (resourcesData: NonNullable<PortfolioData["resources"]>) => void;
+  updateResourceCategories: (categoriesData: NonNullable<PortfolioData["resourceCategories"]>) => void;
   
   // Dynamic query optimized fetchers
   fetchProjects: (limitCount?: number) => Promise<any[]>;
@@ -64,6 +66,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               memories: data.memories || initialPortfolioData.memories,
               blogs: data.blogs || initialPortfolioData.blogs,
               seo: data.seo ? { ...initialPortfolioData.seo, ...data.seo } : initialPortfolioData.seo,
+              resources: data.resources || initialPortfolioData.resources,
+              resourceCategories: data.resourceCategories || initialPortfolioData.resourceCategories,
             };
             setPortfolioData(merged);
             localStorage.setItem("portfolio_cached_data", JSON.stringify(merged));
@@ -213,6 +217,32 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     saveAndSetData({ ...portfolioData, seo: seoData });
   };
 
+  const updateResources = async (resourcesData: NonNullable<PortfolioData["resources"]>) => {
+    saveAndSetData({ ...portfolioData, resources: resourcesData });
+
+    if (isFirebaseConfigured && db) {
+      try {
+        const currentResources = portfolioData.resources || [];
+        const newIds = new Set(resourcesData.map((r) => r.id));
+
+        for (const r of currentResources) {
+          if (!newIds.has(r.id)) {
+            await deleteDoc(doc(db, "resources", r.id));
+          }
+        }
+        for (const r of resourcesData) {
+          await setDoc(doc(db, "resources", r.id), r);
+        }
+      } catch (err) {
+        console.warn("Failed to sync resources collection:", err);
+      }
+    }
+  };
+
+  const updateResourceCategories = (categoriesData: NonNullable<PortfolioData["resourceCategories"]>) => {
+    saveAndSetData({ ...portfolioData, resourceCategories: categoriesData });
+  };
+
   // Dynamic Query Fetchers with Fallbacks
   const fetchProjects = async (limitCount?: number): Promise<any[]> => {
     if (isFirebaseConfigured && db) {
@@ -306,6 +336,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateMemories,
         updateBlogs,
         updateSeo,
+        updateResources,
+        updateResourceCategories,
         fetchProjects,
         fetchMemories,
         fetchBlogs,

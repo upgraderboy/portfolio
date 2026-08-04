@@ -83,6 +83,26 @@ export interface PortfolioData {
   memories: MemoryItem[];
   blogs?: BlogItem[];
   seo?: SeoConfig;
+  resources?: ResourceItem[];
+  resourceCategories?: ResourceCategory[];
+}
+
+export interface ResourceCategory {
+  id: string;
+  name: string;
+  subcategories: string[];
+}
+
+export interface ResourceItem {
+  id: string;
+  title: string;
+  description: string;
+  pdfUrl: string;
+  category: string;
+  subcategory?: string;
+  tags: string[];
+  source?: string;
+  dateAdded: string;
 }
 
 export interface SeoRouteItem {
@@ -138,5 +158,11 @@ export const initialPortfolioData: PortfolioData = {
       { id: "memories", path: "/memories", title: "Memories", description: "Cool Memories of Upgrader Boy in his Tech Journey" },
       { id: "resources", path: "/resources", title: "Resources", description: "All Tech Resources by Upgrader Boy" }
     ]
-  }
+  },
+  resources: [],
+  resourceCategories: [
+    { id: "cat-books", name: "Books", subcategories: ["Computer Science", "Programming", "System Design"] },
+    { id: "cat-notes", name: "Notes", subcategories: ["DSA", "Operating Systems", "Computer Networks"] },
+    { id: "cat-papers", name: "Exam Papers", subcategories: ["GATE", "University Exams"] }
+  ]
 };
