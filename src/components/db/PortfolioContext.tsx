@@ -14,6 +14,7 @@ interface PortfolioContextType {
   updateTestimonials: (testimonialsData: PortfolioData["testimonials"]) => void;
   updateMemories: (memoriesData: PortfolioData["memories"]) => void;
   updateBlogs: (blogsData: NonNullable<PortfolioData["blogs"]>) => void;
+  updateSeo: (seoData: NonNullable<PortfolioData["seo"]>) => void;
   
   // Dynamic query optimized fetchers
   fetchProjects: (limitCount?: number) => Promise<any[]>;
@@ -62,6 +63,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               testimonials: data.testimonials || initialPortfolioData.testimonials,
               memories: data.memories || initialPortfolioData.memories,
               blogs: data.blogs || initialPortfolioData.blogs,
+              seo: data.seo || initialPortfolioData.seo,
             };
             setPortfolioData(merged);
             localStorage.setItem("portfolio_cached_data", JSON.stringify(merged));
@@ -207,6 +209,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const updateSeo = (seoData: NonNullable<PortfolioData["seo"]>) => {
+    saveAndSetData({ ...portfolioData, seo: seoData });
+  };
+
   // Dynamic Query Fetchers with Fallbacks
   const fetchProjects = async (limitCount?: number): Promise<any[]> => {
     if (isFirebaseConfigured && db) {
@@ -299,6 +305,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateTestimonials,
         updateMemories,
         updateBlogs,
+        updateSeo,
         fetchProjects,
         fetchMemories,
         fetchBlogs,

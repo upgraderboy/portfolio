@@ -19,7 +19,7 @@ import BlogsPage from "./components/blogs/BlogsPage.tsx";
 import BlogPostPage from "./components/blogs/BlogPostPage.tsx";
 import ProjectsPage from "./components/portfolio/ProjectsPage.tsx";
 import MemoriesPage from "./components/memories/MemoriesPage.tsx";
-import { PortfolioProvider } from "./components/db/PortfolioContext.tsx";
+import { PortfolioProvider, usePortfolioData } from "./components/db/PortfolioContext.tsx";
 
 interface PortfolioContentProps {
   navigate: (to: string) => void;
@@ -55,6 +55,84 @@ const AppContent: React.FC = () => {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  const { portfolioData } = usePortfolioData();
+
+  useEffect(() => {
+    const seo = portfolioData.seo;
+    if (!seo) return;
+
+    let activeTitle = seo.siteTitle;
+    let activeDescription = seo.siteDescription;
+
+    // Check if current route matches one of the sub-routes configured in SEO Sitelinks
+    const currentRoute = seo.routes.find((r) => r.path === route || (r.path !== "/" && route.startsWith(r.path)));
+    if (currentRoute) {
+      activeTitle = `${currentRoute.title} | ${seo.siteTitle}`;
+      activeDescription = currentRoute.description;
+    }
+
+    // Special handler for dynamic blog post articles
+    if (route.startsWith("/blogs/") && route.length > 7) {
+      const blogId = route.substring(7);
+      const blog = (portfolioData.blogs || []).find((b) => b.id === blogId);
+      if (blog) {
+        activeTitle = `${blog.title} | ${seo.siteTitle}`;
+        // Simple HTML tag removal helper for clean meta description previews
+        const plainText = blog.content.replace(/<[^>]*>/g, "").substring(0, 150).trim();
+        activeDescription = plainText || `Read the full article ${blog.title} on Upgrader Boy Blogs.`;
+      }
+    }
+
+    // 1. Update browser tab title
+    document.title = activeTitle || "Upgrader Boy";
+
+    // 2. Update search engine meta description and social graphs
+    document.querySelector("meta[name='description']")?.setAttribute("content", activeDescription);
+    document.querySelector("meta[property='og:title']")?.setAttribute("content", activeTitle);
+    document.querySelector("meta[property='og:description']")?.setAttribute("content", activeDescription);
+    document.querySelector("meta[name='twitter:title']")?.setAttribute("content", activeTitle);
+    document.querySelector("meta[name='twitter:description']")?.setAttribute("content", activeDescription);
+
+    // 3. Inject/Update Schema.org JSON-LD Structured Data for Google Sitelinks
+    let jsonLdScript = document.getElementById("sitelinks-jsonld") as HTMLScriptElement;
+    if (!jsonLdScript) {
+      jsonLdScript = document.createElement("script");
+      jsonLdScript.id = "sitelinks-jsonld";
+      jsonLdScript.type = "application/ld+json";
+      document.head.appendChild(jsonLdScript);
+    }
+
+    const mainUrl = window.location.origin;
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": `${mainUrl}/#website`,
+          "url": mainUrl,
+          "name": seo.siteTitle,
+          "description": seo.siteDescription,
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": `${mainUrl}/blogs?search={search_term_string}`
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "@id": `${mainUrl}/#navigation`,
+          "name": seo.routes.map((r) => r.title),
+          "url": seo.routes.map((r) => `${mainUrl}${r.path}`)
+        }
+      ]
+    };
+
+    jsonLdScript.textContent = JSON.stringify(schemaData, null, 2);
+  }, [route, portfolioData]);
 
   const navigate = (to: string) => {
     window.history.pushState({}, "", to);

@@ -82,6 +82,20 @@ export interface PortfolioData {
   testimonials: TestimonialItem[];
   memories: MemoryItem[];
   blogs?: BlogItem[];
+  seo?: SeoConfig;
+}
+
+export interface SeoRouteItem {
+  id: string;
+  path: string;
+  title: string;
+  description: string;
+}
+
+export interface SeoConfig {
+  siteTitle: string;
+  siteDescription: string;
+  routes: SeoRouteItem[];
 }
 
 // Default initial data structure (empty template)
@@ -112,5 +126,15 @@ export const initialPortfolioData: PortfolioData = {
   projects: [],
   testimonials: [],
   memories: [],
-  blogs: []
+  blogs: [],
+  seo: {
+    siteTitle: "Upgrader Boy",
+    siteDescription: "Tech. That Makes Trends",
+    routes: [
+      { id: "blogs", path: "/blogs", title: "Blogs", description: "All Tech Blogs from Upgrader Boy" },
+      { id: "projects", path: "/projects", title: "Projects", description: "All Projects developed by Upgrader Boy" },
+      { id: "memories", path: "/memories", title: "Memories", description: "Cool Memories of Upgrader Boy in his Tech Journey" },
+      { id: "resources", path: "/resources", title: "Resources", description: "All Tech Resources by Upgrader Boy" }
+    ]
+  }
 };

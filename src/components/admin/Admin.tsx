@@ -25,6 +25,7 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     updateTestimonials,
     updateMemories,
     updateBlogs,
+    updateSeo,
   } = usePortfolioData();
 
   // Theme State
@@ -67,6 +68,17 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
   const [aboutCvUrl, setAboutCvUrl] = useState(portfolioData.about.cvUrl || "");
   const [homeImageUrl, setHomeImageUrl] = useState(portfolioData.home.imageUrl || "");
   const [aboutImageUrl, setAboutImageUrl] = useState(portfolioData.about.imageUrl || "");
+
+  // SEO State
+  const [seoSiteTitle, setSeoSiteTitle] = useState(portfolioData.seo?.siteTitle || "");
+  const [seoSiteDescription, setSeoSiteDescription] = useState(portfolioData.seo?.siteDescription || "");
+  const [seoRoutes, setSeoRoutes] = useState(portfolioData.seo?.routes || []);
+
+  // Form Route Sub-items state
+  const [routePath, setRoutePath] = useState("");
+  const [routeTitle, setRouteTitle] = useState("");
+  const [routeDescription, setRouteDescription] = useState("");
+
 
   // Projects State Form
   const [projTitle, setProjTitle] = useState("");
@@ -204,6 +216,9 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
     setAboutProjects(portfolioData.about.completedProjects);
     setAboutSupport(portfolioData.about.supportAvailability);
     setAboutImageUrl(portfolioData.about.imageUrl || "");
+    setSeoSiteTitle(portfolioData.seo?.siteTitle || "");
+    setSeoSiteDescription(portfolioData.seo?.siteDescription || "");
+    setSeoRoutes(portfolioData.seo?.routes || []);
   }, [portfolioData]);
 
   // Auth Handler
@@ -340,6 +355,90 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
       }
     );
     alert("Home and About sections updated successfully!");
+  };
+
+  // SEO CRUD Actions
+  const handleSaveSeo = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSeo({
+      siteTitle: seoSiteTitle,
+      siteDescription: seoSiteDescription,
+      routes: seoRoutes,
+    });
+    alert("Main SEO metadata updated successfully!");
+  };
+
+  const handleAddSeoRoute = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!routePath.startsWith("/")) {
+      alert("Sub-route path must start with '/' (e.g. /resources)");
+      return;
+    }
+
+    if (editingId) {
+      const updated = seoRoutes.map((r) => {
+        if (r.id === editingId) {
+          return {
+            ...r,
+            path: routePath,
+            title: routeTitle,
+            description: routeDescription,
+          };
+        }
+        return r;
+      });
+      updateSeo({
+        siteTitle: seoSiteTitle,
+        siteDescription: seoSiteDescription,
+        routes: updated,
+      });
+      setEditingId(null);
+      alert("SEO sub-route updated successfully!");
+    } else {
+      const newRoute = {
+        id: "seo-" + Date.now(),
+        path: routePath,
+        title: routeTitle,
+        description: routeDescription,
+      };
+      const updated = [...seoRoutes, newRoute];
+      updateSeo({
+        siteTitle: seoSiteTitle,
+        siteDescription: seoSiteDescription,
+        routes: updated,
+      });
+      alert("New SEO sub-route added successfully!");
+    }
+
+    setRoutePath("");
+    setRouteTitle("");
+    setRouteDescription("");
+  };
+
+  const handleDeleteSeoRoute = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this sub-route from Google Sitelinks?")) {
+      const updated = seoRoutes.filter((r) => r.id !== id);
+      updateSeo({
+        siteTitle: seoSiteTitle,
+        siteDescription: seoSiteDescription,
+        routes: updated,
+      });
+      alert("Sub-route deleted successfully!");
+    }
+  };
+
+  const startEditSeoRoute = (r: any) => {
+    setEditingId(r.id);
+    setRoutePath(r.path);
+    setRouteTitle(r.title);
+    setRouteDescription(r.description);
+  };
+
+  const resetSeoRouteForm = () => {
+    setEditingId(null);
+    setRoutePath("");
+    setRouteTitle("");
+    setRouteDescription("");
   };
 
   // 2. Project CRUD
@@ -783,6 +882,12 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
             onClick={() => setActiveTab("blogs")}
           >
             <i className="uil uil-book-open"></i> Blogs Section
+          </div>
+          <div
+            className={`admin__nav-item ${activeTab === "seo" ? "active" : ""}`}
+            onClick={() => setActiveTab("seo")}
+          >
+            <i className="uil uil-search"></i> Google SEO
           </div>
         </div>
 
@@ -2546,6 +2651,153 @@ const Admin: React.FC<AdminProps> = ({ navigate }) => {
                 </button>
               </form>
             )}
+          </div>
+        )}
+
+        {/* TAB 7: GOOGLE SEO & SITELINKS */}
+        {activeTab === "seo" && (
+          <div>
+            <div className="admin__content-header">
+              <div>
+                <h2 className="admin__content-title">Google SEO & Sitelinks</h2>
+                <span className="admin__content-subtitle">Optimize search results and configure sub-route listings</span>
+              </div>
+            </div>
+
+            {/* Main Meta Settings Form */}
+            <form onSubmit={handleSaveSeo} className="admin__form-card">
+              <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1.5rem" }}>Main Metadata</h3>
+              <div className="admin__form-grid">
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Google Search Title (Brand/Site Name)</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="e.g. Upgrader Boy"
+                    value={seoSiteTitle}
+                    onChange={(e) => setSeoSiteTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Main Search Description (Slogan/Meta tag)</label>
+                  <textarea
+                    className="admin__form-textarea"
+                    placeholder="e.g. Tech. That Makes Trends"
+                    value={seoSiteDescription}
+                    onChange={(e) => setSeoSiteDescription(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+              </div>
+              <button type="submit" className="admin__btn admin__btn--primary" style={{ marginTop: "1rem" }}>
+                Save Main SEO Metadata
+              </button>
+            </form>
+
+            {/* Sitelinks List */}
+            <h3 className="admin__form-title" style={{ textAlign: "left", margin: "2rem 0 1rem" }}>Google Search Sitelinks (Sub-routes)</h3>
+            <div className="admin__table-container">
+              <table className="admin__table">
+                <thead>
+                  <tr>
+                    <th>Sub-route Path</th>
+                    <th>Search Title</th>
+                    <th>Sub-link Description</th>
+                    <th style={{ width: "120px" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {seoRoutes.length > 0 ? (
+                    seoRoutes.map((r) => (
+                      <tr key={r.id}>
+                        <td style={{ fontWeight: "600", fontFamily: "monospace", color: "var(--green-color)" }}>{r.path}</td>
+                        <td style={{ fontWeight: "600" }}>{r.title}</td>
+                        <td>{r.description}</td>
+                        <td>
+                          <div className="admin__table-actions">
+                            <button
+                              type="button"
+                              className="admin__action-btn admin__action-btn--edit"
+                              onClick={() => startEditSeoRoute(r)}
+                              title="Edit Sitelink"
+                            >
+                              <i className="uil uil-edit"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="admin__action-btn admin__action-btn--delete"
+                              onClick={() => handleDeleteSeoRoute(r.id)}
+                              title="Delete Sitelink"
+                            >
+                              <i className="uil uil-trash-alt"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: "center", color: "var(--text-color-light)", padding: "2rem" }}>
+                        No Google sub-routes configured yet. Add routes below to display under search results!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Add / Edit Sitelink Form */}
+            <form onSubmit={handleAddSeoRoute} className="admin__form-card" style={{ marginTop: "2rem" }}>
+              <h3 className="admin__form-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
+                <i className="uil uil-plus-circle"></i> {editingId ? "Edit Sub-route Sitelink" : "Add New Sub-route Sitelink"}
+              </h3>
+              <div className="admin__form-grid" style={{ marginBottom: "1.5rem" }}>
+                <div className="admin__form-group">
+                  <label className="admin__form-label">Sub-route URL Path *</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="e.g. /resources (must start with '/')"
+                    value={routePath}
+                    onChange={(e) => setRoutePath(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="admin__form-group">
+                  <label className="admin__form-label">Sub-route Title *</label>
+                  <input
+                    type="text"
+                    className="admin__form-input"
+                    placeholder="e.g. Resources"
+                    value={routeTitle}
+                    onChange={(e) => setRouteTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Sub-link Search Description *</label>
+                  <textarea
+                    className="admin__form-textarea"
+                    placeholder="e.g. All Tech Resources by Upgrader Boy"
+                    value={routeDescription}
+                    onChange={(e) => setRouteDescription(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button type="submit" className="admin__btn admin__btn--primary">
+                  {editingId ? "Update Sitelink" : "Create Sitelink"}
+                </button>
+                {editingId && (
+                  <button type="button" className="admin__btn admin__btn--secondary" onClick={resetSeoRouteForm}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
         )}
       </div>
