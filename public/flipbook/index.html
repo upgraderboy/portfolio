@@ -151,27 +151,27 @@
       text-align: center;
     }
 
-    /* Loader */
-    .loader {
-      position: absolute;
+    /* Pulsing Placeholder Cover styling */
+    .book-placeholder {
+      width: 380px;
+      height: 520px;
+      background-color: var(--card-color);
+      border: 2px dashed rgba(100, 116, 139, 0.35);
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      row-gap: 1rem;
-      z-index: 300;
+      justify-content: center;
+      color: #71878d;
+      gap: 1.25rem;
+      animation: pulse 1.6s infinite ease-in-out;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
 
-    .loader-circle {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(0, 255, 30, 0.1);
-      border-top-color: var(--first-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes pulse {
+      0% { opacity: 0.6; transform: scale(0.98); }
+      50% { opacity: 1; transform: scale(1.0); }
+      100% { opacity: 0.6; transform: scale(0.98); }
     }
 
     /* Media queries for compact display */
@@ -189,10 +189,12 @@
 </head>
 <body>
 
-  <!-- Loading State -->
-  <div class="loader" id="loader">
-    <div class="loader-circle"></div>
-    <div>Rendering 3D Book Layout...</div>
+  <!-- Loading Placeholder -->
+  <div id="loader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 300;">
+    <div class="book-placeholder">
+      <i class="uil uil-book-open" style="font-size: 3.5rem; color: var(--first-color); opacity: 0.8;"></i>
+      <span style="font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px;">Formatting 3D pages...</span>
+    </div>
   </div>
 
   <!-- Left/Right Nav Arrows -->
