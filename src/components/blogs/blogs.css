@@ -447,3 +447,49 @@
 .blog-post__share-item:hover {
   background-color: rgba(100, 116, 139, 0.08) !important;
 }
+
+/* Premium Code Block Syntax & Header Styling */
+.blog-post__article pre {
+  background-color: #0f172a !important; 
+  color: #e2e8f0 !important;
+  font-family: 'Consolas', 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+  padding: 3rem 1.25rem 1.25rem !important; 
+  overflow-x: auto;
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  margin: 1.5rem 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.code-header-bar {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(4px);
+}
+
+.code-copy-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: var(--title-color) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Sidebar Table of Contents Responsive Styles */
+@media screen and (min-width: 1200px) {
+  .blog-post__container {
+    max-width: 968px !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .blog-post__toc-sidebar {
+    display: flex !important;
+  }
+  
+  .blog-post__main-content {
+    max-width: 700px;
+  }
+  
+  .blog-post__layout-wrapper {
+    width: 100%;
+  }
+}

@@ -50,6 +50,7 @@ interface PortfolioContextType {
   fetchBlogPostComments: (blogId: string) => Promise<any[]>;
   updateCommentInBlogPost: (blogId: string, commentId: string, text: string) => Promise<void>;
   replyToCommentInBlogPost: (blogId: string, commentId: string, replyText: string, currentUser: any) => Promise<any>;
+  subscribeToNewsletter: (email: string) => Promise<void>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -626,6 +627,25 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return newReply;
   };
 
+  const subscribeToNewsletter = async (email: string) => {
+    if (isFirebaseConfigured && db) {
+      const colRef = collection(db, "subscribers");
+      const docRef = doc(colRef);
+      await setDoc(docRef, {
+        email,
+        subscribedAt: new Date().toISOString()
+      });
+    } else {
+      const subsKey = "mock_subscribers";
+      const listStr = localStorage.getItem(subsKey) || "[]";
+      const list = JSON.parse(listStr);
+      if (!list.some((s: any) => s.email === email)) {
+        list.push({ email, subscribedAt: new Date().toISOString() });
+        localStorage.setItem(subsKey, JSON.stringify(list));
+      }
+    }
+  };
+
   return (
     <PortfolioContext.Provider
       value={{
@@ -640,6 +660,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         refreshUser,
         updateCommentInBlogPost,
         replyToCommentInBlogPost,
+        subscribeToNewsletter,
         likeBlogPost,
         unlikeBlogPost,
         checkUserLikedBlogPost,

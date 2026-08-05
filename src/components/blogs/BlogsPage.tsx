@@ -7,12 +7,37 @@ interface BlogsPageProps {
 }
 
 const BlogsPage: React.FC<BlogsPageProps> = ({ navigate }) => {
-  const { fetchBlogs, portfolioData } = usePortfolioData();
+  const { fetchBlogs, portfolioData, subscribeToNewsletter } = usePortfolioData();
   const [allBlogs, setAllBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredBlogs, setFilteredBlogs] = useState<any[]>([]);
+
+  // Subscriber Newsletter States
+  const [subEmail, setSubEmail] = useState("");
+  const [subLoading, setSubLoading] = useState(false);
+  const [subSuccess, setSubSuccess] = useState(false);
+  const [subError, setSubError] = useState("");
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subEmail.trim()) return;
+    setSubLoading(true);
+    setSubError("");
+    setSubSuccess(false);
+    try {
+      await subscribeToNewsletter(subEmail.trim());
+      setSubSuccess(true);
+      setSubEmail("");
+      setTimeout(() => setSubSuccess(false), 5000);
+    } catch (err: any) {
+      console.error("Subscription failed:", err);
+      setSubError("Failed to subscribe. Please try again.");
+    } finally {
+      setSubLoading(false);
+    }
+  };
 
   // Scroll to top on page mount
   useEffect(() => {
@@ -151,6 +176,93 @@ const BlogsPage: React.FC<BlogsPageProps> = ({ navigate }) => {
           )}
         </>
       )}
+
+      {/* Premium Glassmorphic Newsletter Subscription Form */}
+      <section className="blogs-page__newsletter" style={{ marginTop: "5rem" }}>
+        <div 
+          style={{
+            background: "linear-gradient(135deg, rgba(100, 116, 139, 0.05) 0%, rgba(100, 116, 139, 0.08) 100%)",
+            border: "1px solid rgba(100, 116, 139, 0.15)",
+            borderRadius: "1.5rem",
+            padding: "3rem 2rem",
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            rowGap: "1.5rem",
+            maxWidth: "600px",
+            margin: "0 auto",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.04)"
+          }}
+        >
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "56px", height: "56px", borderRadius: "50%", backgroundColor: "rgba(1, 195, 105, 0.08)", color: "var(--green-color)", fontSize: "1.8rem", marginBottom: "0.25rem" }}>
+            <i className="uil uil-envelope-alt"></i>
+          </div>
+          <div>
+            <h3 style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--title-color)", marginBottom: "0.5rem" }}>Stay in the Loop</h3>
+            <p style={{ fontSize: "0.9rem", color: "var(--text-color-light)", maxWidth: "450px", margin: "0 auto", lineHeight: "1.6" }}>
+              Subscribe to get notified about new technical articles, software architecture write-ups, and developer resources.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubscribe} style={{ display: "flex", width: "100%", maxWidth: "450px", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
+            <input 
+              type="email" 
+              placeholder="Enter your email address" 
+              required
+              value={subEmail}
+              onChange={(e) => setSubEmail(e.target.value)}
+              disabled={subLoading}
+              style={{
+                flex: "1 1 250px",
+                padding: "0.8rem 1.2rem",
+                borderRadius: "2rem",
+                border: "1px solid rgba(100, 116, 139, 0.2)",
+                backgroundColor: "var(--container-color)",
+                color: "var(--title-color)",
+                fontSize: "0.85rem",
+                outline: "none",
+                transition: "border-color 0.25s"
+              }}
+            />
+            <button 
+              type="submit" 
+              disabled={subLoading}
+              style={{
+                flex: "0 0 auto",
+                padding: "0.8rem 1.8rem",
+                borderRadius: "2rem",
+                backgroundColor: "var(--green-color)",
+                color: "#fff",
+                border: "none",
+                fontWeight: 600,
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                transition: "background 0.2s, transform 0.1s",
+                display: "inline-flex",
+                alignItems: "center",
+                columnGap: "0.5rem"
+              }}
+            >
+              {subLoading ? (
+                <div className="portfolio-loader-circle" style={{ width: "14px", height: "14px", borderWidth: "2px", borderColor: "rgba(255,255,255,0.2)", borderTopColor: "#fff" }} />
+              ) : null}
+              Subscribe
+            </button>
+          </form>
+
+          {subSuccess && (
+            <div style={{ color: "var(--green-color)", fontSize: "0.85rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <i className="uil uil-check-circle" style={{ fontSize: "1.1rem" }}></i> Thanks for subscribing!
+            </div>
+          )}
+          {subError && (
+            <div style={{ color: "red", fontSize: "0.85rem", fontWeight: 500 }}>
+              {subError}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };

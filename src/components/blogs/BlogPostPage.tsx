@@ -78,6 +78,10 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
   const [replyCommentText, setReplyCommentText] = useState("");
   const [submittingReply, setSubmittingReply] = useState(false);
 
+  // Table of Contents States
+  const [headings, setHeadings] = useState<{ id: string; text: string; level: number }[]>([]);
+  const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+
   // Scroll Progress Bar Tracker
   useEffect(() => {
     const handleScroll = () => {
@@ -107,6 +111,141 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
       active = false;
     };
   }, [blogId, portfolioData.blogs, fetchBlogPost]);
+
+  // Parse headings once blog loads
+  useEffect(() => {
+    if (!blog || loading) return;
+
+    const timer = setTimeout(() => {
+      const articleEl = document.querySelector(".blog-post__article");
+      if (!articleEl) return;
+
+      const headingEls = articleEl.querySelectorAll("h2, h3");
+      const list: { id: string; text: string; level: number }[] = [];
+
+      headingEls.forEach((el, index) => {
+        const id = el.id || `heading-${index}`;
+        el.id = id;
+        list.push({
+          id,
+          text: el.textContent || "",
+          level: el.tagName.toLowerCase() === "h2" ? 2 : 3
+        });
+      });
+
+      setHeadings(list);
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [blog, loading]);
+
+  // Observer to track which heading is active on scroll
+  useEffect(() => {
+    if (headings.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleHeadings = entries.filter((entry) => entry.isIntersecting);
+        if (visibleHeadings.length > 0) {
+          setActiveHeadingId(visibleHeadings[0].target.id);
+        }
+      },
+      {
+        rootMargin: "-80px 0px -60% 0px",
+        threshold: 0.1
+      }
+    );
+
+    headings.forEach((heading) => {
+      const el = document.getElementById(heading.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [headings]);
+
+  // Hover Copy Code Buttons setup
+  useEffect(() => {
+    if (!blog || loading) return;
+
+    const timer = setTimeout(() => {
+      const articleEl = document.querySelector(".blog-post__article");
+      if (!articleEl) return;
+
+      const preElements = articleEl.querySelectorAll("pre");
+      preElements.forEach((pre) => {
+        if (pre.querySelector(".code-copy-btn")) return;
+
+        pre.style.position = "relative";
+        pre.style.paddingTop = "2.5rem"; 
+        pre.style.borderRadius = "0.75rem";
+
+        const code = pre.querySelector("code");
+        let lang = "code";
+        if (code) {
+          const className = code.className || "";
+          const match = className.match(/language-(\w+)/);
+          if (match && match[1]) {
+            lang = match[1];
+          }
+        }
+
+        const headerBar = document.createElement("div");
+        headerBar.className = "code-header-bar";
+        headerBar.style.position = "absolute";
+        headerBar.style.top = "0";
+        headerBar.style.left = "0";
+        headerBar.style.width = "100%";
+        headerBar.style.padding = "0.4rem 1rem";
+        headerBar.style.backgroundColor = "rgba(100, 116, 139, 0.12)";
+        headerBar.style.borderBottom = "1px solid rgba(100, 116, 139, 0.08)";
+        headerBar.style.display = "flex";
+        headerBar.style.justifyContent = "space-between";
+        headerBar.style.alignItems = "center";
+        headerBar.style.borderTopLeftRadius = "0.75rem";
+        headerBar.style.borderTopRightRadius = "0.75rem";
+        headerBar.style.fontSize = "0.75rem";
+        headerBar.style.color = "var(--text-color-light)";
+        headerBar.style.textTransform = "uppercase";
+        headerBar.style.fontWeight = "600";
+        headerBar.innerText = lang;
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "code-copy-btn";
+        copyBtn.style.padding = "2px 8px";
+        copyBtn.style.fontSize = "0.7rem";
+        copyBtn.style.borderRadius = "4px";
+        copyBtn.style.border = "1px solid rgba(100, 116, 139, 0.25)";
+        copyBtn.style.background = "transparent";
+        copyBtn.style.color = "var(--text-color-light)";
+        copyBtn.style.cursor = "pointer";
+        copyBtn.style.fontWeight = "600";
+        copyBtn.style.display = "inline-flex";
+        copyBtn.style.alignItems = "center";
+        copyBtn.style.gap = "4px";
+        copyBtn.innerHTML = '<i class="uil uil-copy"></i> Copy';
+
+        copyBtn.addEventListener("click", () => {
+          const textToCopy = code ? code.innerText : pre.innerText;
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            copyBtn.innerHTML = '<i class="uil uil-check" style="color: var(--green-color)"></i> Copied!';
+            copyBtn.style.borderColor = "var(--green-color)";
+            copyBtn.style.color = "var(--green-color)";
+            setTimeout(() => {
+              copyBtn.innerHTML = '<i class="uil uil-copy"></i> Copy';
+              copyBtn.style.borderColor = "rgba(100, 116, 139, 0.25)";
+              copyBtn.style.color = "var(--text-color-light)";
+            }, 2000);
+          });
+        });
+
+        headerBar.appendChild(copyBtn);
+        pre.appendChild(headerBar);
+      });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [blog, loading]);
 
   // Load likes and comments once user or blogId shifts
   useEffect(() => {
@@ -302,6 +441,8 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
       />
 
       <div className="blog-post__container">
+        <div className="blog-post__layout-wrapper" style={{ display: "flex", columnGap: "3rem", alignItems: "start", position: "relative" }}>
+          <div className="blog-post__main-content" style={{ flex: 1, minWidth: 0 }}>
         {/* Navigation Action Bar */}
         <div 
           style={{ 
@@ -1110,6 +1251,55 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ blogId, navigate }) => {
             </div>
           </div>
         )}
+          </div>
+
+          {/* Sticky Table of Contents Sidebar */}
+          {headings.length > 0 && (
+            <aside 
+              className="blog-post__toc-sidebar"
+              style={{
+                width: "220px",
+                position: "sticky",
+                top: "100px",
+                display: "none", 
+                flexDirection: "column",
+                rowGap: "0.85rem",
+                flexShrink: 0,
+                maxHeight: "calc(100vh - 140px)",
+                overflowY: "auto",
+                padding: "0.25rem 0.5rem"
+              }}
+            >
+              <h4 style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "var(--title-color)", fontWeight: 700, letterSpacing: "1px", marginBottom: "0.5rem", borderBottom: "1px solid rgba(100,116,139,0.1)", paddingBottom: "0.5rem" }}>
+                On This Page
+              </h4>
+              <nav style={{ display: "flex", flexDirection: "column", rowGap: "0.65rem" }}>
+                {headings.map((h) => (
+                  <a 
+                    key={h.id} 
+                    href={`#${h.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setActiveHeadingId(h.id);
+                    }}
+                    style={{
+                      fontSize: h.level === 2 ? "0.85rem" : "0.78rem",
+                      paddingLeft: h.level === 3 ? "1rem" : "0",
+                      color: activeHeadingId === h.id ? "var(--green-color)" : "var(--text-color-light)",
+                      fontWeight: activeHeadingId === h.id ? 700 : 500,
+                      textDecoration: "none",
+                      lineHeight: "1.4",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {h.text}
+                  </a>
+                ))}
+              </nav>
+            </aside>
+          )}
+        </div>
       </div>
     </>
   );
