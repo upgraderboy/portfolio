@@ -20,6 +20,7 @@ import BlogPostPage from "./components/blogs/BlogPostPage.tsx";
 import ProjectsPage from "./components/portfolio/ProjectsPage.tsx";
 import MemoriesPage from "./components/memories/MemoriesPage.tsx";
 import ResourcesPage from "./components/resources/ResourcesPage.tsx";
+import ResourcesSection from "./components/resources/ResourcesSection.tsx";
 import { PortfolioProvider, usePortfolioData } from "./components/db/PortfolioContext.tsx";
 
 interface PortfolioContentProps {
@@ -38,6 +39,7 @@ const PortfolioContent: React.FC<PortfolioContentProps> = ({ navigate }) => {
       <Memories navigate={navigate} />
       <Project navigate={navigate} />
       <BlogsSection navigate={navigate} />
+      <ResourcesSection navigate={navigate} />
       <Testimonials />
       <Contact />
       <Footer navigate={navigate} />
