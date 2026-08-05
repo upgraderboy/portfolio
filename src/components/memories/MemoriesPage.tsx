@@ -160,27 +160,36 @@ const MemoriesPage: React.FC<MemoriesPageProps> = ({ navigate }) => {
                 {currentMemories.map((event) => {
                   const hasMultiple = event.images.length > 1;
                   return (
-                    <div className="memories__card" key={event.id}>
-                      <div className="memories__img-wrapper">
-                        <span className="memories__category">{event.category}</span>
-                        {hasMultiple && (
-                          <span className="memories__badge">
-                            <i className="uil uil-images"></i> {event.images.length} Photos
-                          </span>
-                        )}
-                        <img src={event.images[0]} alt={event.title} className="memories__img" />
-                      </div>
+                    <div className="memories__card-wrapper" key={event.id}>
+                      <div className="memories__card">
+                        <div className="memories__scanner-line"></div>
+                        <div className="memories__hud-bar">
+                          <span className="memories__hud-status"><span className="memories__hud-blink">●</span> REC</span>
+                          <span className="memories__hud-tag">{event.date}</span>
+                        </div>
+                        <div className="memories__img-wrapper">
+                          <div className="memories__corner top-left"></div>
+                          <div className="memories__corner top-right"></div>
+                          <div className="memories__corner bottom-left"></div>
+                          <div className="memories__corner bottom-right"></div>
 
-                      <h3 className="memories__title">{event.title}</h3>
-                      <div className="memories__date">
-                        <i className="uil uil-calendar-alt"></i> {event.date}
-                      </div>
-                      <p className="memories__description">{event.description}</p>
+                          <span className="memories__category">{event.category}</span>
+                          {hasMultiple && (
+                            <span className="memories__badge">
+                              <i className="uil uil-images"></i> {event.images.length} Photos
+                            </span>
+                          )}
+                          <img src={event.images[0]} alt={event.title} className="memories__img" />
+                        </div>
 
-                      <button className="memories__button" onClick={() => openLightbox(event)}>
-                        {hasMultiple ? "View Gallery" : "View Photo"}{" "}
-                        <i className="uil uil-arrow-right memories__button-icon"></i>
-                      </button>
+                        <h3 className="memories__title">{event.title}</h3>
+                        <p className="memories__description">{event.description}</p>
+
+                        <button className="memories__button" onClick={() => openLightbox(event)}>
+                          {hasMultiple ? "View Gallery" : "View Photo"}{" "}
+                          <i className="uil uil-arrow-right memories__button-icon"></i>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
