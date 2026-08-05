@@ -2,7 +2,9 @@
 
 /**
  * ESM Node.js Script to Migrate Firestore Database to PostgreSQL/SQL Relational Schema.
- * Extracts data from Firestore collections and generates a standardized 'migration_dump.sql' script.
+ * Extracts data from Firestore collections and:
+ *   1. Writes database inserts directly to PostgreSQL if connection credentials are provided.
+ *   2. Generates a standardized 'migration_dump.sql' script file.
  * Includes a complete offline fallback using the local initial dataset.
  */
 
@@ -165,7 +167,7 @@ async function main() {
   let adminSdk = null;
   let firestoreDb = null;
   
-  // Try importing firebase-admin dynamically
+  // 1. Try connecting to Live Firestore Database
   try {
     const pkg = await import("firebase-admin");
     adminSdk = pkg.default;
@@ -287,47 +289,55 @@ async function main() {
 
   sql.push("BEGIN;\n");
 
+  // Helper arrays for statement-by-statement live execution
+  const activeStatements = [];
+
+  const addStatement = (stmt) => {
+    sql.push(stmt);
+    activeStatements.push(stmt);
+  };
+
   // 1. Users insertion
-  sql.push("-- 1. Users insertion");
+  addStatement("-- 1. Users insertion");
   usersList.forEach(u => {
-    sql.push(`INSERT INTO users (id, name, email, role) VALUES (${escape(u.id)}, ${escape(u.name || "User")}, ${escape(u.email)}, ${escape(u.role || "user")}) ON CONFLICT (id) DO NOTHING;`);
+    addStatement(`INSERT INTO users (id, name, email, role) VALUES (${escape(u.id)}, ${escape(u.name || "User")}, ${escape(u.email)}, ${escape(u.role || "user")}) ON CONFLICT (id) DO NOTHING;`);
   });
   sql.push("");
 
   // 2. Home & About configs insertion
-  sql.push("-- 2. Config singletons insertion");
+  addStatement("-- 2. Config singletons insertion");
   if (data.home) {
-    sql.push(`INSERT INTO portfolio_home (id, name, subtitle, description, image_url) VALUES ('data', ${escape(data.home.name)}, ${escape(data.home.subtitle)}, ${escape(data.home.description)}, ${escape(data.home.imageUrl)}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, subtitle = EXCLUDED.subtitle, description = EXCLUDED.description, image_url = EXCLUDED.image_url;`);
+    addStatement(`INSERT INTO portfolio_home (id, name, subtitle, description, image_url) VALUES ('data', ${escape(data.home.name)}, ${escape(data.home.subtitle)}, ${escape(data.home.description)}, ${escape(data.home.imageUrl)}) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, subtitle = EXCLUDED.subtitle, description = EXCLUDED.description, image_url = EXCLUDED.image_url;`);
   }
   if (data.about) {
-    sql.push(`INSERT INTO portfolio_about (id, description, experience_years, completed_projects, support_availability, cv_url, image_url) VALUES ('data', ${escape(data.about.description)}, ${escape(data.about.experienceYears)}, ${escape(data.about.completedProjects)}, ${escape(data.about.supportAvailability)}, ${escape(data.about.cvUrl)}, ${escape(data.about.imageUrl)}) ON CONFLICT (id) DO UPDATE SET description = EXCLUDED.description, experience_years = EXCLUDED.experience_years, completed_projects = EXCLUDED.completed_projects, support_availability = EXCLUDED.support_availability, cv_url = EXCLUDED.cv_url, image_url = EXCLUDED.image_url;`);
+    addStatement(`INSERT INTO portfolio_about (id, description, experience_years, completed_projects, support_availability, cv_url, image_url) VALUES ('data', ${escape(data.about.description)}, ${escape(data.about.experienceYears)}, ${escape(data.about.completedProjects)}, ${escape(data.about.supportAvailability)}, ${escape(data.about.cvUrl)}, ${escape(data.about.imageUrl)}) ON CONFLICT (id) DO UPDATE SET description = EXCLUDED.description, experience_years = EXCLUDED.experience_years, completed_projects = EXCLUDED.completed_projects, support_availability = EXCLUDED.support_availability, cv_url = EXCLUDED.cv_url, image_url = EXCLUDED.image_url;`);
   }
   sql.push("");
 
   // 3. Skills insertion
-  sql.push("-- 3. Skills list insertion");
+  addStatement("-- 3. Skills list insertion");
   if (data.skills) {
     if (Array.isArray(data.skills.frontend)) {
       data.skills.frontend.forEach(s => {
-        sql.push(`INSERT INTO skills (name, level, category) VALUES (${escape(s.name)}, ${escape(s.level)}, 'frontend');`);
+        addStatement(`INSERT INTO skills (name, level, category) VALUES (${escape(s.name)}, ${escape(s.level)}, 'frontend');`);
       });
     }
     if (Array.isArray(data.skills.backend)) {
       data.skills.backend.forEach(s => {
-        sql.push(`INSERT INTO skills (name, level, category) VALUES (${escape(s.name)}, ${escape(s.level)}, 'backend');`);
+        addStatement(`INSERT INTO skills (name, level, category) VALUES (${escape(s.name)}, ${escape(s.level)}, 'backend');`);
       });
     }
   }
   sql.push("");
 
   // 4. Services & Service Points insertion
-  sql.push("-- 4. Services & Service Points insertion");
+  addStatement("-- 4. Services & Service Points insertion");
   if (Array.isArray(data.services)) {
     data.services.forEach(srv => {
-      sql.push(`INSERT INTO services (id, title, icon, modal_title, modal_description) VALUES (${escape(srv.id)}, ${escape(srv.title)}, ${escape(srv.icon)}, ${escape(srv.modalTitle)}, ${escape(srv.modalDescription)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO services (id, title, icon, modal_title, modal_description) VALUES (${escape(srv.id)}, ${escape(srv.title)}, ${escape(srv.icon)}, ${escape(srv.modalTitle)}, ${escape(srv.modalDescription)}) ON CONFLICT (id) DO NOTHING;`);
       if (Array.isArray(srv.points)) {
         srv.points.forEach(pt => {
-          sql.push(`INSERT INTO service_points (id, service_id, text, link) VALUES (${escape(pt.id || generateId())}, ${escape(srv.id)}, ${escape(pt.text)}, ${escape(pt.link || null)}) ON CONFLICT (id) DO NOTHING;`);
+          addStatement(`INSERT INTO service_points (id, service_id, text, link) VALUES (${escape(pt.id || generateId())}, ${escape(srv.id)}, ${escape(pt.text)}, ${escape(pt.link || null)}) ON CONFLICT (id) DO NOTHING;`);
         });
       }
     });
@@ -335,47 +345,47 @@ async function main() {
   sql.push("");
 
   // 5. Qualifications insertion
-  sql.push("-- 5. Qualifications list insertion");
+  addStatement("-- 5. Qualifications list insertion");
   if (data.qualification) {
     if (Array.isArray(data.qualification.education)) {
       data.qualification.education.forEach(edu => {
-        sql.push(`INSERT INTO qualifications (id, title, subtitle, calendar, type) VALUES (${escape(edu.id || generateId())}, ${escape(edu.title)}, ${escape(edu.subtitle)}, ${escape(edu.calendar)}, 'education') ON CONFLICT (id) DO NOTHING;`);
+        addStatement(`INSERT INTO qualifications (id, title, subtitle, calendar, type) VALUES (${escape(edu.id || generateId())}, ${escape(edu.title)}, ${escape(edu.subtitle)}, ${escape(edu.calendar)}, 'education') ON CONFLICT (id) DO NOTHING;`);
       });
     }
     if (Array.isArray(data.qualification.experience)) {
       data.qualification.experience.forEach(exp => {
-        sql.push(`INSERT INTO qualifications (id, title, subtitle, calendar, type) VALUES (${escape(exp.id || generateId())}, ${escape(exp.title)}, ${escape(exp.subtitle)}, ${escape(exp.calendar)}, 'experience') ON CONFLICT (id) DO NOTHING;`);
+        addStatement(`INSERT INTO qualifications (id, title, subtitle, calendar, type) VALUES (${escape(exp.id || generateId())}, ${escape(exp.title)}, ${escape(exp.subtitle)}, ${escape(exp.calendar)}, 'experience') ON CONFLICT (id) DO NOTHING;`);
       });
     }
   }
   sql.push("");
 
   // 6. Projects insertion
-  sql.push("-- 6. Projects list insertion");
+  addStatement("-- 6. Projects list insertion");
   if (Array.isArray(data.projects)) {
     data.projects.forEach(p => {
-      sql.push(`INSERT INTO projects (id, title, category, image_url, demo_url, buy_url, github_url) VALUES (${escape(p.id)}, ${escape(p.title)}, ${escape(p.category)}, ${escape(p.image)}, ${escape(p.demo || null)}, ${escape(p.buy || null)}, ${escape(p.github || null)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO projects (id, title, category, image_url, demo_url, buy_url, github_url) VALUES (${escape(p.id)}, ${escape(p.title)}, ${escape(p.category)}, ${escape(p.image)}, ${escape(p.demo || null)}, ${escape(p.buy || null)}, ${escape(p.github || null)}) ON CONFLICT (id) DO NOTHING;`);
     });
   }
   sql.push("");
 
   // 7. Testimonials insertion
-  sql.push("-- 7. Testimonials list insertion");
+  addStatement("-- 7. Testimonials list insertion");
   if (Array.isArray(data.testimonials)) {
     data.testimonials.forEach(t => {
-      sql.push(`INSERT INTO testimonials (id, title, description, image_url) VALUES (${escape(t.id)}, ${escape(t.title)}, ${escape(t.description)}, ${escape(t.image)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO testimonials (id, title, description, image_url) VALUES (${escape(t.id)}, ${escape(t.title)}, ${escape(t.description)}, ${escape(t.image)}) ON CONFLICT (id) DO NOTHING;`);
     });
   }
   sql.push("");
 
   // 8. Memories & Memory Images insertion
-  sql.push("-- 8. Memories & Memory Images insertion");
+  addStatement("-- 8. Memories & Memory Images insertion");
   if (Array.isArray(data.memories)) {
     data.memories.forEach(mem => {
-      sql.push(`INSERT INTO memories (id, title, description, category, date_label) VALUES (${escape(mem.id)}, ${escape(mem.title)}, ${escape(mem.description)}, ${escape(mem.category)}, ${escape(mem.date)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO memories (id, title, description, category, date_label) VALUES (${escape(mem.id)}, ${escape(mem.title)}, ${escape(mem.description)}, ${escape(mem.category)}, ${escape(mem.date)}) ON CONFLICT (id) DO NOTHING;`);
       if (Array.isArray(mem.images)) {
         mem.images.forEach(img => {
-          sql.push(`INSERT INTO memory_images (memory_id, image_url) VALUES (${escape(mem.id)}, ${escape(img)});`);
+          addStatement(`INSERT INTO memory_images (memory_id, image_url) VALUES (${escape(mem.id)}, ${escape(img)});`);
         });
       }
     });
@@ -383,61 +393,56 @@ async function main() {
   sql.push("");
 
   // 9. Blogs insertion
-  sql.push("-- 9. Blogs list insertion");
+  addStatement("-- 9. Blogs list insertion");
   if (Array.isArray(data.blogs)) {
     data.blogs.forEach(b => {
-      sql.push(`INSERT INTO blogs (id, title, content, cover_image, status, published_date) VALUES (${escape(b.id)}, ${escape(b.title)}, ${escape(b.content)}, ${escape(b.coverImage || null)}, ${escape(b.status || "public")}, ${escape(b.date || null)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO blogs (id, title, content, cover_image, status, published_date) VALUES (${escape(b.id)}, ${escape(b.title)}, ${escape(b.content)}, ${escape(b.coverImage || null)}, ${escape(b.status || "public")}, ${escape(b.date || null)}) ON CONFLICT (id) DO NOTHING;`);
     });
   }
   sql.push("");
 
   // 10. Blog Likes insertion
-  sql.push("-- 10. Blog Likes insertion");
+  addStatement("-- 10. Blog Likes insertion");
   likesList.forEach(like => {
-    // Generate a secure user link if user ID exists
     const userId = like.userId || (usersList[0] ? usersList[0].id : null);
     if (userId) {
-      sql.push(`INSERT INTO blog_likes (id, blog_id, user_id) VALUES (${escape(like.id)}, ${escape(like.blogId)}, ${escape(userId)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO blog_likes (id, blog_id, user_id) VALUES (${escape(like.id)}, ${escape(like.blogId)}, ${escape(userId)}) ON CONFLICT (id) DO NOTHING;`);
     }
   });
   sql.push("");
 
   // 11. Blog Comments insertion (Top level comments first to avoid parent constraints)
-  sql.push("-- 11. Blog Comments insertion");
+  addStatement("-- 11. Blog Comments insertion");
   const topComments = commentsList.filter(c => !c.parentCommentId);
   const replies = commentsList.filter(c => c.parentCommentId);
 
-  // Insert parents
   topComments.forEach(c => {
     const userId = c.userId || null;
-    sql.push(`INSERT INTO blog_comments (id, blog_id, user_id, user_name, user_avatar, content, parent_comment_id) VALUES (${escape(c.id)}, ${escape(c.blogId)}, ${escape(userId)}, ${escape(c.userName || "Guest")}, ${escape(c.userAvatar || null)}, ${escape(c.content)}, NULL) ON CONFLICT (id) DO NOTHING;`);
+    addStatement(`INSERT INTO blog_comments (id, blog_id, user_id, user_name, user_avatar, content, parent_comment_id) VALUES (${escape(c.id)}, ${escape(c.blogId)}, ${escape(userId)}, ${escape(c.userName || "Guest")}, ${escape(c.userAvatar || null)}, ${escape(c.content)}, NULL) ON CONFLICT (id) DO NOTHING;`);
   });
 
-  // Insert child replies
   replies.forEach(c => {
     const userId = c.userId || null;
-    sql.push(`INSERT INTO blog_comments (id, blog_id, user_id, user_name, user_avatar, content, parent_comment_id) VALUES (${escape(c.id)}, ${escape(c.blogId)}, ${escape(userId)}, ${escape(c.userName || "Guest")}, ${escape(c.userAvatar || null)}, ${escape(c.content)}, ${escape(c.parentCommentId)}) ON CONFLICT (id) DO NOTHING;`);
+    addStatement(`INSERT INTO blog_comments (id, blog_id, user_id, user_name, user_avatar, content, parent_comment_id) VALUES (${escape(c.id)}, ${escape(c.blogId)}, ${escape(userId)}, ${escape(c.userName || "Guest")}, ${escape(c.userAvatar || null)}, ${escape(c.content)}, ${escape(c.parentCommentId)}) ON CONFLICT (id) DO NOTHING;`);
   });
   sql.push("");
 
   // 12. SEO Config & Routes insertion
-  sql.push("-- 12. SEO Configuration insertion");
+  addStatement("-- 12. SEO Configuration insertion");
   if (data.seo) {
-    sql.push(`INSERT INTO seo_config (id, site_title, site_description, favicon_url) VALUES ('data', ${escape(data.seo.siteTitle)}, ${escape(data.seo.siteDescription)}, ${escape(data.seo.faviconUrl)}) ON CONFLICT (id) DO UPDATE SET site_title = EXCLUDED.site_title, site_description = EXCLUDED.site_description, favicon_url = EXCLUDED.favicon_url;`);
+    addStatement(`INSERT INTO seo_config (id, site_title, site_description, favicon_url) VALUES ('data', ${escape(data.seo.siteTitle)}, ${escape(data.seo.siteDescription)}, ${escape(data.seo.faviconUrl)}) ON CONFLICT (id) DO UPDATE SET site_title = EXCLUDED.site_title, site_description = EXCLUDED.site_description, favicon_url = EXCLUDED.favicon_url;`);
     if (Array.isArray(data.seo.routes)) {
       data.seo.routes.forEach(r => {
-        sql.push(`INSERT INTO seo_routes (id, path, title, description) VALUES (${escape(r.id)}, ${escape(r.path)}, ${escape(r.title)}, ${escape(r.description)}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description;`);
+        addStatement(`INSERT INTO seo_routes (id, path, title, description) VALUES (${escape(r.id)}, ${escape(r.path)}, ${escape(r.title)}, ${escape(r.description)}) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description;`);
       });
     }
   }
   sql.push("");
 
   // 13. Resource Categories hierarchy insertion
-  sql.push("-- 13. Resource Categories hierarchy insertion");
-  
-  // Recursively insert categories tree
+  addStatement("-- 13. Resource Categories hierarchy insertion");
   function insertCategoryNode(node, parentId = null) {
-    sql.push(`INSERT INTO resource_categories (id, name, parent_id) VALUES (${escape(node.id)}, ${escape(node.name)}, ${escape(parentId)}) ON CONFLICT (id) DO NOTHING;`);
+    addStatement(`INSERT INTO resource_categories (id, name, parent_id) VALUES (${escape(node.id)}, ${escape(node.name)}, ${escape(parentId)}) ON CONFLICT (id) DO NOTHING;`);
     if (Array.isArray(node.children)) {
       node.children.forEach(child => insertCategoryNode(child, node.id));
     }
@@ -448,22 +453,20 @@ async function main() {
   sql.push("");
 
   // 14. Resources, tags, and category mappings
-  sql.push("-- 14. Resources, tags, and category mappings");
+  addStatement("-- 14. Resources, tags, and category mappings");
   if (Array.isArray(data.resources)) {
     data.resources.forEach(r => {
-      sql.push(`INSERT INTO resources (id, title, description, pdf_url, thumbnail_url, source, date_added) VALUES (${escape(r.id)}, ${escape(r.title)}, ${escape(r.description)}, ${escape(r.pdfUrl)}, ${escape(r.thumbnailUrl || null)}, ${escape(r.source || null)}, ${escape(r.dateAdded)}) ON CONFLICT (id) DO NOTHING;`);
+      addStatement(`INSERT INTO resources (id, title, description, pdf_url, thumbnail_url, source, date_added) VALUES (${escape(r.id)}, ${escape(r.title)}, ${escape(r.description)}, ${escape(r.pdfUrl)}, ${escape(r.thumbnailUrl || null)}, ${escape(r.source || null)}, ${escape(r.dateAdded)}) ON CONFLICT (id) DO NOTHING;`);
       
-      // Mapping categories paths
       if (Array.isArray(r.categoryPath)) {
         r.categoryPath.forEach(catId => {
-          sql.push(`INSERT INTO resource_category_mapping (resource_id, category_id) VALUES (${escape(r.id)}, ${escape(catId)});`);
+          addStatement(`INSERT INTO resource_category_mapping (resource_id, category_id) VALUES (${escape(r.id)}, ${escape(catId)});`);
         });
       }
 
-      // Mapping tags
       if (Array.isArray(r.tags)) {
         r.tags.forEach(tag => {
-          sql.push(`INSERT INTO resource_tags (resource_id, tag) VALUES (${escape(r.id)}, ${escape(tag)});`);
+          addStatement(`INSERT INTO resource_tags (resource_id, tag) VALUES (${escape(r.id)}, ${escape(tag)});`);
         });
       }
     });
@@ -471,22 +474,73 @@ async function main() {
   sql.push("");
 
   // 15. Newsletter Subscribers list
-  sql.push("-- 15. Newsletter Subscribers list");
+  addStatement("-- 15. Newsletter Subscribers list");
   newsletterList.forEach(sub => {
-    sql.push(`INSERT INTO newsletter_subscribers (email) VALUES (${escape(sub.email)}) ON CONFLICT (email) DO NOTHING;`);
+    addStatement(`INSERT INTO newsletter_subscribers (email) VALUES (${escape(sub.email)}) ON CONFLICT (email) DO NOTHING;`);
   });
   sql.push("");
 
   sql.push("COMMIT;\n");
 
+  // 16. Exporter: Save generated SQL file
   const dumpPath = path.join(process.cwd(), "migration_dump.sql");
   fs.writeFileSync(dumpPath, sql.join("\n"), "utf8");
+  console.log(`\x1b[32m✔ Exported output SQL dump file saved to: \x1b[36m${dumpPath}\x1b[0m`);
+
+  // 17. Live Mode: Try connecting and executing directly on PostgreSQL if credentials are provided
+  const pgCredentials = {
+    host: process.env.PGHOST || process.env.PG_HOST,
+    user: process.env.PGUSER || process.env.PG_USER,
+    password: process.env.PGPASSWORD || process.env.PG_PASSWORD,
+    database: process.env.PGDATABASE || process.env.PG_DATABASE,
+    port: process.env.PGPORT || process.env.PG_PORT || 5432,
+    connectionString: process.env.DATABASE_URL
+  };
   
-  console.log(`\x1b[32m✔ Migration Script Finished Successfully!\x1b[0m`);
-  console.log(`Exported output SQL dump file saved to: \x1b[36m${dumpPath}\x1b[0m\n`);
-  console.log("To import this dump into your PostgreSQL database:");
-  console.log("  1. Create tables first: \x1b[34mpsql -U username -d dbname -f src/components/db/schema.sql\x1b[0m");
-  console.log("  2. Load migrated values: \x1b[34mpsql -U username -d dbname -f migration_dump.sql\x1b[0m\n");
+  const hasPgCredentials = pgCredentials.connectionString || (pgCredentials.host && pgCredentials.database);
+
+  if (hasPgCredentials) {
+    console.log("\nConnecting to live PostgreSQL database to perform migration...");
+    try {
+      const pgPkg = await import("pg");
+      const Client = pgPkg.default.Client;
+      
+      const client = new Client(pgCredentials.connectionString ? { connectionString: pgCredentials.connectionString } : pgCredentials);
+      await client.connect();
+      console.log("\x1b[32m✔ Connected to PostgreSQL database successfully.\x1b[0m");
+
+      // Check and execute schema.sql DDL setup
+      const schemaSqlPath = path.join(__dirname, "schema.sql");
+      if (fs.existsSync(schemaSqlPath)) {
+        console.log("Executing schema.sql DDL table setup...");
+        const schemaSql = fs.readFileSync(schemaSqlPath, "utf8");
+        await client.query(schemaSql);
+        console.log("  - DDL tables construction complete");
+      }
+
+      // Execute SQL Transaction Statements
+      console.log("Inserting migration records into live PostgreSQL tables...");
+      await client.query("BEGIN;");
+      for (const statement of activeStatements) {
+        const stmtTrim = statement.trim();
+        if (stmtTrim && !stmtTrim.startsWith("--")) {
+          await client.query(stmtTrim);
+        }
+      }
+      await client.query("COMMIT;");
+      console.log("\x1b[32m✔ Live database migration completed successfully!\x1b[0m");
+      
+      await client.end();
+    } catch (pgError) {
+      console.error("\x1b[31m✖ Live PostgreSQL Migration Failed:\x1b[0m", pgError.message);
+      console.log("Ensure the 'pg' library is installed (\x1b[36mnpm install -D pg\x1b[0m) and database credentials are correct.");
+    }
+  } else {
+    console.log("\nTo import this dump into your PostgreSQL database:");
+    console.log("  1. Create tables first: \x1b[34mpsql -U username -d dbname -f src/components/db/schema.sql\x1b[0m");
+    console.log("  2. Load migrated values: \x1b[34mpsql -U username -d dbname -f migration_dump.sql\x1b[0m\n");
+    console.log("  Alternatively, set standard env credentials (e.g. PGHOST, PGUSER, PGPASSWORD, PGDATABASE) to perform live inserts automatically!");
+  }
 }
 
 main().catch(err => {
