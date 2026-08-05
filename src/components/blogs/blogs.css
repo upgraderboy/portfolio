@@ -493,3 +493,48 @@
     width: 100%;
   }
 }
+
+/* Dark Mode Specific Overrides for Blog Post readability */
+[data-theme="dark"] .blog-post__article {
+  color: #a0aec0 !important; 
+}
+
+[data-theme="dark"] .blog-post__article p,
+[data-theme="dark"] .blog-post__article li {
+  color: #a0aec0 !important;
+}
+
+[data-theme="dark"] .blog-post__title,
+[data-theme="dark"] .blog-post__article h1,
+[data-theme="dark"] .blog-post__article h2,
+[data-theme="dark"] .blog-post__article h3,
+[data-theme="dark"] .blog-post__article h4 {
+  color: var(--green-color) !important; 
+}
+
+[data-theme="dark"] .blog-post__article strong {
+  color: #ffffff !important; 
+}
+
+[data-theme="dark"] .blog-post__article blockquote {
+  color: #a0aec0 !important; 
+  border-left-color: var(--green-color) !important;
+  background-color: rgba(100, 116, 139, 0.05) !important;
+}
+
+[data-theme="dark"] .blog-post__article code {
+  color: #fb7185 !important; 
+  background-color: rgba(251, 113, 133, 0.08) !important;
+}
+
+[data-theme="dark"] .blog-post__article pre code {
+  color: #e2e8f0 !important; 
+}
+
+[data-theme="dark"] .blog-post__toc-sidebar nav a {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .blog-post__toc-sidebar nav a:hover {
+  color: #ffffff;
+}
